@@ -1,28 +1,7 @@
 const http = require('http');
 const mysql = require('mysql2');
 
-const port = 3000;
-
-// Create a connection to your MySQL database
-const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'password',
-  database: 'libraryManagement',
-});
-
-// Connect to the database
-connection.connect((err) => {
-  if (err) {
-    console.error('Error connecting to the database: ' + err.stack);
-    return;
-  }
-  console.log('Connected to the database');
-});
-const server = http.createServer((req, res) => {
-
-  //localhost:3000/books
-  if (req.method === 'GET' && req.url === '/books') {
+function getAllBooks(connection, req, res){
     const selectQuery = 'SELECT * FROM BookListing'
     connection.query(selectQuery, (err, results) => {
       if (err) {
@@ -36,13 +15,9 @@ const server = http.createServer((req, res) => {
       res.end(JSON.stringify(results));
 
     });
-  }
+}
 
-
-
-  //'localhost:3000/books/search?keyword=man
-  else if (req.method === 'GET' && req.url.startsWith('/books/search')) {
-
+function searchBooks(connection, req, res){
     const userKeyword = req.url.split('?')[1]?.split('=')[1];
     const searchQuery = `
     SELECT * FROM BookListing
@@ -65,14 +40,9 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify(results));
       }
     });
-  }
+}
 
-
-
-  //'localhost:3000/books/order?price=<10,order=low-High'
-  //'localhost:3000/books/order?price=<10 -> default order high-low
-  else if (req.method === 'GET' && req.url.startsWith('/books/order')) {
-
+function orderBooks(connection, req, res){
     const features = req.url.split('?')[1]?.split(',')
     let priceFeatures = features[0].split('=').pop();
     let orderFeatures = NaN;
@@ -113,12 +83,9 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify(results));
       }
     });
-  }
+}
 
-  //'localhost:3000/books/filter?feature=feature1,feature2&price=<50,order=low-High'
-  //'localhost:3000/books/filter?feature=feature1,feature2&price=<50' -> default order High-low
-  //'localhost:3000/books/filter?feature=feature1,feature2 -> show all books with the given filters
-  else if (req.method === 'GET' && req.url.startsWith('/books/filter')) {
+function filterBooks(connection, req, res){
     let selectQuery;
     if (req.url.includes('&')) {
       let params = req.url.split('?')[1]?.split('&')
@@ -197,11 +164,9 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify(results));
       }
     });
+}
 
-  }
-
-  //'localhost:3000/books/{id}
-  else if (req.method === 'GET' && req.url.startsWith('/books/')) {
+function getBook(connection, req, res){
     const bookId = parseInt(req.url.split('/').pop());
     if (isNaN(bookId)) {
       res.statusCode = 400;
@@ -225,10 +190,9 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify(results[0]));
       }
     });
-  }
+}
 
-  //localhost:3000/books/1
-  else if (req.method === 'POST' && req.url.startsWith('/books/')) {
+function newBook(connection, req, res){
     const userId = parseInt(req.url.split('/').pop());
     // console.log(userId);
     const selectQuery = `SELECT is_admin FROM CustomerRepresentative WHERE user_id = ?`;
@@ -298,10 +262,9 @@ const server = http.createServer((req, res) => {
         }));
       }
     });
-  }
+}
 
-  // UPDATE OPERATIONS
-  else if (req.method === 'PATCH' && req.url.startsWith('/updatebook')) {
+function updateBook(connection, req, res){
     const userDetails = req.url.split('?')[1]?.split('&');
     // console.log(userDetails)
     const bookId = parseInt(userDetails[1].split('=')[1])
@@ -387,12 +350,9 @@ const server = http.createServer((req, res) => {
         });
       }
     });
-  }
+}
 
-  //DELETE OPERATIONS
-  //DELETE OPERATIONS
-  //http://localhost:3000/deletebook?userId=<UserID>&bookId=<BookID>
-  else if (req.method === 'DELETE' && req.url.startsWith('/deletebook')) {
+function deleteBook(connection, req, res){
     const userDetails = req.url.split('?')[1]?.split('&');
     // console.log(userDetails)
     const bookId = parseInt(userDetails[1].split('=')[1])
@@ -462,7 +422,9 @@ const server = http.createServer((req, res) => {
         });
       }
     });
-  } else if (req.method === 'DELETE' && req.url.startsWith('/all/')) {
+}
+
+function deleteAll(connection, req, res) {
     const userId = parseInt(req.url.split('/').pop());
     const selectQuery = `SELECT is_admin FROM CustomerRepresentative WHERE user_id = ?`;
     connection.query(selectQuery, [userId], (error, results) => {
@@ -493,9 +455,16 @@ const server = http.createServer((req, res) => {
         }));
       }
     });
-  }
+}
 
-});
-server.listen(port, () => {
-  console.log(`Successfully started server on port ${port}.`);
-});
+module.exports ={
+    searchBooks,
+    filterBooks,
+    orderBooks,
+    getAllBooks,
+    getBook,
+    newBook,
+    updateBook,
+    deleteBook,
+    deleteAll
+}

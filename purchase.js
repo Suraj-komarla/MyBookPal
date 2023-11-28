@@ -6,26 +6,9 @@ const stripe = require('stripe')('sk_test_51OHGwhI1Ek63lRaqSVzjrAYXeY7BqNxhGi2VO
 const success = "http://localhost:3000/success.html"
 // const cancel = "https://buy.stripe.com/test_aEU9Bg95L9Ot5c4bIK"
 
-const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'heythere',
-  database: 'project',
-});
-
-// Function to handle database connection
-function connectToDatabase() {
-  connection.connect((err) => {
-    if (err) {
-      console.error('Error connecting to the database: ' + err.stack);
-      return;
-    }
-    console.log('Connected to the database');
-  });
-}
 
 //Function to update the products in the cart - called when user wants to add/delete the products in cart or when the user checksout the cart
-function updateCart(book_id, user_id, action) {
+function updateCart(connection, book_id, user_id, action) {
   console.log(`Updating cart for book_id: ${book_id}, user_id: ${user_id}, action: ${action}`);
   return new Promise((resolve, reject) => {
     if (!book_id || !user_id || !action || (action !== 'add' && action !== 'remove')) {
@@ -91,7 +74,7 @@ function updateCart(book_id, user_id, action) {
 
 //Function to update the wallet value of the user - called when the user adds the amount or makes a purchase
 const userWallets = {}
-function updateWallet(user_id, amount, action) {
+function updateWallet(connection, user_id, amount, action) {
   console.log(`Updating wallet for user_id: ${user_id}, amount: ${amount}, action: ${action}`);
   return new Promise((resolve, reject) => {
     if (!user_id || !amount || !action || (action !== 'add' && action !== 'sub')) {
@@ -154,7 +137,7 @@ function updateWallet(user_id, amount, action) {
 }
 
 //Function to update the book quantity in the inventory table to reduce the quantity after the user's purchase is successful.  
-function updateBookQuantity(bookId, quantity) {
+function updateBookQuantity(connection, bookId, quantity) {
   console.log(`Updating book quantity for bookId: ${bookId}, quantity: ${quantity}`);
   return new Promise((resolve, reject) => {
     if (!bookId || !quantity || isNaN(quantity)) {
@@ -188,7 +171,7 @@ function updateBookQuantity(bookId, quantity) {
 }
 
 //Function is called after the user's purchase is succesful and it is added to their purchase history.
-function addToPurchaseHistory(UserID, BookID, Quantity, totalPrice) {
+function addToPurchaseHistory(connection, UserID, BookID, Quantity, totalPrice) {
   return new Promise((resolve, reject) => {
     // Get the current time in the format 'YYYY-MM-DD HH:MM:SS'
     const paymentDateTime = moment().format('YYYY-MM-DD HH:mm:ss');
@@ -219,7 +202,7 @@ function addToPurchaseHistory(UserID, BookID, Quantity, totalPrice) {
 }
 
 //Function is called once the user qualifies certain checks and to make his purchase successful.
-function performPurchase(UserID, BookID, Quantity, totalPrice) {
+function performPurchase(connection, UserID, BookID, Quantity, totalPrice) {
   console.log(`Performing purchase for UserID: ${UserID}, BookID: ${BookID}, Quantity: ${Quantity}, totalPrice: ${totalPrice}`);
   return new Promise((resolve, reject) => {
     connection.beginTransaction(err => {
@@ -229,18 +212,18 @@ function performPurchase(UserID, BookID, Quantity, totalPrice) {
         return;
       }
 
-      updateCart(BookID, UserID, 'remove')
+      updateCart(connection, BookID, UserID, 'remove')
         .then(cartResult => {
           console.log('Cart update result:', cartResult);
-          return updateWallet(UserID, totalPrice, 'sub');
+          return updateWallet(connection, UserID, totalPrice, 'sub');
         })
         .then(walletResult => {
           console.log('Wallet update result:', walletResult);
-          return updateBookQuantity(BookID, Quantity);
+          return updateBookQuantity(connection, BookID, Quantity);
         })
         .then(bookQuantityResult => {
           console.log('Book quantity update result:', bookQuantityResult);
-          return addToPurchaseHistory(UserID, BookID, Quantity, totalPrice);
+          return addToPurchaseHistory(connection, UserID, BookID, Quantity, totalPrice);
         })
         .then(purchaseHistoryResult => {
           console.log('Purchase history update result:', purchaseHistoryResult);
@@ -268,7 +251,7 @@ function performPurchase(UserID, BookID, Quantity, totalPrice) {
 }
 
 //Verify if the inventory has sufficient stock that user intends to make a purchase
-function checkQuantity(bookId, quantity) {
+function checkQuantity(connection, bookId, quantity) {
   return new Promise((resolve, reject) => {
     console.log('Checking quantity for BookID:', bookId, 'Quantity:', quantity);
     const selectQuery = 'SELECT * from BookListing where BookID = ? AND Quantity >= ?';
@@ -289,7 +272,7 @@ function checkQuantity(bookId, quantity) {
 }
 
 //Computes and returns the final purchase value for the products that are being checked out
-function computePrice(bookId, quantity) {
+function computePrice(connection, bookId, quantity) {
   return new Promise((resolve, reject) => {
     console.log('Computing price for BookID:', bookId, 'Quantity:', quantity);
 
@@ -317,7 +300,7 @@ function computePrice(bookId, quantity) {
 }
 
 //Function to get the user's wallet amount - Used when user intends to make a purchase
-function getWalletBalance(userId) {
+function getWalletBalance(connection, userId) {
   return new Promise((resolve, reject) => {
     console.log('Fetching wallet balance for UserID:', userId);
     const selectQuery = 'SELECT WalletBalance FROM wallet WHERE UserID = ?';
@@ -372,7 +355,7 @@ function createCheckoutSession(userId, amount) {
 }
 
 //Function called when a http request is initiated to checkout from the cart
-function purchaseProduct(req, res) {
+function purchaseProduct(connection, req, res) {
   console.log('Received a purchase request');
   let requestBody = '';
 
@@ -405,8 +388,8 @@ function purchaseProduct(req, res) {
     const purchasePromises = parsedBody.map((product) => {
       const { UserID, BookID, Quantity } = product;
 
-      return checkQuantity(BookID, Quantity)
-        .then(() => computePrice(BookID, Quantity))
+      return checkQuantity(connection, BookID, Quantity)
+        .then(() => computePrice(connection, BookID, Quantity))
         .then((result) => {
           totalPurchaseValue += result.total_price; // Accumulate total purchase value
           return { UserID, BookID, Quantity, totalPrice: result.total_price }; // Include totalPrice in the resolved object
@@ -418,7 +401,7 @@ function purchaseProduct(req, res) {
     Promise.all(purchasePromises)
       .then((resolvedProducts) => {
         products = resolvedProducts; // Assign to outer scope variable
-        return getWalletBalance(products[0].UserID, totalPurchaseValue);
+        return getWalletBalance(connection, products[0].UserID, totalPurchaseValue);
       })
       .then((userWalletBalance) => {
         console.log('User wallet balance:', userWalletBalance);
@@ -431,7 +414,7 @@ function purchaseProduct(req, res) {
         const productPurchasePromises = products.map((product) => {
           const { UserID, BookID, Quantity, totalPrice } = product;
 
-          return performPurchase(UserID, BookID, Quantity, totalPrice);
+          return performPurchase(connection, UserID, BookID, Quantity, totalPrice);
         });
 
         return Promise.all(productPurchasePromises);
@@ -450,7 +433,7 @@ function purchaseProduct(req, res) {
 }
 
 // Function called when the user wants to check his past purchase history
-function viewPurchaseHistory(req, res) {
+function viewPurchaseHistory(connection, req, res) {
   if (req.method === 'GET' && req.url.startsWith('/purchase_history')) {
     const queryParameters = new URLSearchParams(req.url.split('?')[1]);
     const userId = queryParameters.get('id');
@@ -492,7 +475,7 @@ function viewPurchaseHistory(req, res) {
 
 // Assuming userBalances is a global variable or defined in the outer scope
 const userBalances = {};
-function addBalancetoWallet(req, res) {
+function addBalancetoWallet(connection, req, res) {
   console.log('Received a request to add to the wallet');
   let requestBody = '';
 
@@ -545,7 +528,7 @@ function addBalancetoWallet(req, res) {
   });
 }
 
-function handleSuccess(req, res) {
+function handleSuccess(connection, req, res) {
   const sessionId = req.query.session_id;
 
   const updateQuery = `
@@ -602,7 +585,7 @@ function handleSuccess(req, res) {
 }
 
 // Function to view a user's cart
-function viewUserCart(req, res) {
+function viewUserCart(connection, req, res) {
   const queryParameters = new URLSearchParams(req.url.split('?')[1]);
   const userId = queryParameters.get('id');
 
@@ -646,7 +629,7 @@ function viewUserCart(req, res) {
 }
 
 //Function to add the products to the cart
-function addToCart(req, res) {
+function addToCart(connection, req, res) {
   let requestBody = '';
 
   req.on('data', (data) => {
@@ -721,7 +704,7 @@ function addToCart(req, res) {
   });
 }
 // Function to delete all products from the cart for a user
-function deleteFromCart(req, res) {
+function deleteFromCart(connection, req, res) {
   const queryParameters = new URLSearchParams(req.url.split('?')[1]);
   const userId = queryParameters.get('id');
   if (!userId || isNaN(userId)) {
@@ -789,35 +772,11 @@ function deleteFromCart(req, res) {
   });
 }
 
-
-const server = http.createServer((req, res) => {
-  console.log(`Received request: ${req.method} ${req.url}`);
-
-  if (req.method === 'GET' && req.url.startsWith('/view_cart')) {
-    viewUserCart(req, res);
-  } else if (req.method === 'POST' && req.url.startsWith('/add_wallet_amount')) {
-    addBalancetoWallet(req, res);
-  }
-  else if (req.method === 'POST' && req.url.startsWith('/purchase_product')) {
-    purchaseProduct(req, res);
-  }
-  else if (req.method === 'POST' && req.url.startsWith('/add_cart')) {
-    addToCart(req, res);
-  } 
-  else if (req.method === 'GET' && req.url.startsWith('/purchase_history')) {
-    viewPurchaseHistory(req, res);
-  } 
-  else if (req.method === 'DELETE' && req.url.startsWith('/delete_from_cart')) {
-    deleteFromCart(req, res);
-  } 
-  else {
-    console.log('Invalid request endpoint or method');
-    res.statusCode = 404;
-    res.end('Not Found');
-  }
-});
-
-server.listen(port, () => {
-  console.log(`Successfully started server on port ${port}.`);
-});
-connectToDatabase();
+module.exports = {
+    viewUserCart,
+    viewPurchaseHistory,
+    deleteFromCart,
+    addToCart,
+    addBalancetoWallet,
+    purchaseProduct
+}

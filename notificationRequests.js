@@ -2,18 +2,8 @@ const http = require('http');
 const url = require('url');
 const mysql = require('mysql2');
 const querystring = require('querystring');
-const { subscribe } = require('diagnostics_channel');
 const nodemailer = require('nodemailer');
-const cron = require('node-cron');
-const twilio = require('twilio');
 const request = require('request');
-
-// Your Twilio Account SID and Auth Token
-/*const accountSid = 'AC5df4829cb56fa6cbb958f75738f69d94';
-const authToken = '867cbe33b694e41b2ed5276d4bd89694';
-
-// Create a Twilio client
-const client = twilio(accountSid, authToken);*/
 
 const transporter = nodemailer.createTransport({
     service: 'Gmail', 
@@ -22,22 +12,6 @@ const transporter = nodemailer.createTransport({
       pass: 'kpfo zlbj mmzz rrtf', 
     },
   });
-
-// Database connection setup (replace with your actual database configuration)
-const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'root',
-    database: 'libraryManagement',
-  });
-  
-db.connect((err) => {
-if (err) {
-    console.error('Database connection error: ' + err.message);
-} else {
-    console.log('Database connected');
-}
-});
 
 // Function to send an email notification
 function sendBookAvailableEmail(userEmail, bookTitle) {
@@ -76,7 +50,7 @@ function sendSMSNotification(to, Title) {
 }
 
 // Function to check and send email notifications for available books
-function checkReservedBooks() {
+function checkReservedBooks(db) {
     // Query the database to check for reserved books that are now available
     db.query(
     'SELECT n.RequestID, n.UserID, n.BookID, b.Title, u.Email, u.PhoneNumber, np.EmailNotifications, np.SMSNotifications ' +
@@ -114,195 +88,166 @@ function checkReservedBooks() {
     );
   }
 
-  
-  
-  // Schedule the function to run every 5 minutes
-  cron.schedule('*/5 * * * *', () => {
-    console.log('Checking for available books and sending notifications...');
-    checkReservedBooks();
-  });
-
-const server = http.createServer((req, res) => {
-    const parsedUrl = url.parse(req.url, true);
-    if (req.method === 'POST' && parsedUrl.pathname.startsWith('/books/subscribe')) {
-        // Extract Title and Book_description from the URL
-        const queryParams = new URLSearchParams(parsedUrl.query);
-        const Title = queryParams.get('Title');
-        const Book_condition = queryParams.get('Book_condition');
-
-        // Check if the book exists and the quantity is 0
-        const checkQuery = 'SELECT * FROM BookListing WHERE Title = ? AND Book_condition = ?';
-        db.query(checkQuery, [Title, Book_condition], (checkErr, checkResults) => {
-        if (checkErr) {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Database error' }));
-        } else {
-            if (checkResults.length === 0) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Book not found' }));
-            }
-            else if(checkResults[0].Quantity > 0) {
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ message: 'Book is available for purchase or lending' }));
-            } else {
-            // Insert a new subscription record (replace with your actual logic)
-            const authenticatedUserId = 1;
-            const subscriptionData = {
-                UserID: authenticatedUserId, // Replace with the actual user ID
-                BookID: checkResults[0].BookID,
-            };
-
-            // Insert a new subscription record
-            const insertQuery = 'INSERT INTO NotificationRequests (UserID, BookID, RequestDate) VALUES (?, ?, NOW())';
-            db.query(insertQuery, [subscriptionData.UserID, subscriptionData.BookID], (insertErr, insertResults) => {
-                if (insertErr) {
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Subscription failed' }));
-                } else {
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ message: 'Subscription successful. We will notify you when the books is available for purchase/lending' }));
-                }
-            });
-            }
+  function newSubscription(db, req, res, Title, Book_condition) {
+  const checkQuery = 'SELECT * FROM BookListing WHERE Title = ? AND Book_condition = ?';
+    db.query(checkQuery, [Title, Book_condition], (checkErr, checkResults) => {
+    if (checkErr) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Database error' }));
+    } else {
+        if (checkResults.length === 0) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Book not found' }));
         }
-    });
-    } 
-    else if (req.method === 'DELETE' && parsedUrl.pathname.startsWith('/books/unsubscribe')) {
-
-        const queryParams = new URLSearchParams(parsedUrl.query);
-        const Title = queryParams.get('Title');
-        const Book_condition = queryParams.get('Book_condition');
+        else if(checkResults[0].Quantity > 0) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Book is available for purchase or lending' }));
+        } else {
+        // Insert a new subscription record (replace with your actual logic)
         const authenticatedUserId = 1;
+        const subscriptionData = {
+            UserID: authenticatedUserId, // Replace with the actual user ID
+            BookID: checkResults[0].BookID,
+        };
 
-        // Check if the book exists and the user has a subscription
-        const checkQuery = 'SELECT * FROM BookListing WHERE Title = ? AND Book_condition = ?';
-        db.query(checkQuery, [Title, Book_condition], (checkErr, checkResults) => {
-        if (checkErr) {
+        // Insert a new subscription record
+        const insertQuery = 'INSERT INTO NotificationRequests (UserID, BookID, RequestDate) VALUES (?, ?, NOW())';
+        db.query(insertQuery, [subscriptionData.UserID, subscriptionData.BookID], (insertErr, insertResults) => {
+            if (insertErr) {
             res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Database error' }));
-        } else {
-            if (checkResults.length === 0) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Book not found' }));
+            res.end(JSON.stringify({ error: 'Subscription failed' }));
             } else {
-                const subcribeCheckQuery = 'SELECT * FROM NotificationRequests WHERE BookID = ? AND UserID = ?';
-                db.query(subcribeCheckQuery, [checkResults[0].BookID, authenticatedUserId], (subscribeCheckErr, subscribeCheckResults) => {
-                    if (subscribeCheckErr) {
-                        res.writeHead(500, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ error: 'Database error' }));
-                    } else {
-                        if (subscribeCheckResults.length === 0) {
-                            res.writeHead(400, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify({ error: 'No active subscription on this book' }));
-                        }
-                        else {
-                            // Delete the subscription record
-                            const deleteQuery = 'DELETE FROM NotificationRequests WHERE BookID = ? AND UserID = ?';
-                            db.query(deleteQuery, [checkResults[0].BookID, authenticatedUserId], (deleteErr, deleteResults) => {
-                                if (deleteErr) {
-                                    res.writeHead(500, { 'Content-Type': 'application/json' });
-                                    res.end(JSON.stringify({ error: 'Unsubscription failed' }));
-                                } else {
-                                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                                    res.end(JSON.stringify({ message: 'Unsubscription successful' }));
-                                }
-                            });
-                        }
-                    }
-                });
-            }
-        }
-        });
-    }
-    else if (req.method === 'GET' && parsedUrl.pathname === '/notifications') {
-        const authenticatedUserId = 1
-        // Retrieve the user's current subscriptions
-        const selectQuery = 'SELECT N.RequestID, B.Title, B.Book_condition FROM NotificationRequests N JOIN BookListing B ON N.BookID = B.BookID WHERE N.UserID = ?';
-        db.query(selectQuery, [authenticatedUserId], (selectErr, selectResults) => {
-        if (selectErr) {
-            res.writeHead(500, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Database error' }));
-        } else {
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(selectResults));
-        }
+            res.end(JSON.stringify({ message: 'Subscription successful. We will notify you when the books is available for purchase/lending' }));
+            }
         });
+        }
     }
-    else if (req.method === 'GET' && parsedUrl.pathname === '/notifications/preferences') {
-        // Extract the user ID from the URL or from a token
-        const authenticatedUserId = 1; // Replace with the actual user's ID
-    
-        // Query the database to retrieve the user's notification preferences
-        db.query(
-          'SELECT n.*, c.Email, c.PhoneNumber FROM NotificationPreferences n INNER JOIN CUSTOMER c ON C.UserId = n.UserID WHERE c.UserID = ?',
-          [authenticatedUserId],
-          (err, results) => {
-            if (err) {
-              console.error('Error querying the database: ' + err);
-              res.writeHead(500, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ error: 'Internal Server Error' }));
-              return;
-            }
-    
-            if (results.length === 0) {
-              res.writeHead(404, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ error: 'Notification preferences not found for the user' }));
-              return;
-            }
-    
-            const notificationPreferences = results[0]; // Assuming a single row for the user
-    
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify(notificationPreferences));
-          }
-        );
+  });
+}
+
+function cancelSubscription(db, req, res, Title, Book_condition){
+  const authenticatedUserId = 1;
+  // Check if the book exists and the user has a subscription
+  const checkQuery = 'SELECT * FROM BookListing WHERE Title = ? AND Book_condition = ?';
+  db.query(checkQuery, [Title, Book_condition], (checkErr, checkResults) => {
+  if (checkErr) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Database error' }));
+  } else {
+      if (checkResults.length === 0) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Book not found' }));
+      } else {
+          const subcribeCheckQuery = 'SELECT * FROM NotificationRequests WHERE BookID = ? AND UserID = ?';
+          db.query(subcribeCheckQuery, [checkResults[0].BookID, authenticatedUserId], (subscribeCheckErr, subscribeCheckResults) => {
+              if (subscribeCheckErr) {
+                  res.writeHead(500, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ error: 'Database error' }));
+              } else {
+                  if (subscribeCheckResults.length === 0) {
+                      res.writeHead(400, { 'Content-Type': 'application/json' });
+                      res.end(JSON.stringify({ error: 'No active subscription on this book' }));
+                  }
+                  else {
+                      // Delete the subscription record
+                      const deleteQuery = 'DELETE FROM NotificationRequests WHERE BookID = ? AND UserID = ?';
+                      db.query(deleteQuery, [checkResults[0].BookID, authenticatedUserId], (deleteErr, deleteResults) => {
+                          if (deleteErr) {
+                              res.writeHead(500, { 'Content-Type': 'application/json' });
+                              res.end(JSON.stringify({ error: 'Unsubscription failed' }));
+                          } else {
+                              res.writeHead(200, { 'Content-Type': 'application/json' });
+                              res.end(JSON.stringify({ message: 'Unsubscription successful' }));
+                          }
+                      });
+                  }
+              }
+          });
       }
-      else  if (req.method === 'POST' && parsedUrl.pathname === '/notifications/preferences') {
-        let data = '';
+  }
+  });
+}
+
+function getSubscriptions(db, req, res){
+  const authenticatedUserId = 1
+  // Retrieve the user's current subscriptions
+  const selectQuery = 'SELECT N.RequestID, B.Title, B.Book_condition FROM NotificationRequests N JOIN BookListing B ON N.BookID = B.BookID WHERE N.UserID = ?';
+  db.query(selectQuery, [authenticatedUserId], (selectErr, selectResults) => {
+  if (selectErr) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Database error' }));
+  } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(selectResults));
+  }
+  });
+}
+
+function getNotificationPreferences(db, req, res){
+  // Extract the user ID from the URL or from a token
+  const authenticatedUserId = 1; // Replace with the actual user's ID
     
-        req.on('data', (chunk) => {
-          data += chunk;
-        })
+  // Query the database to retrieve the user's notification preferences
+  db.query(
+    'SELECT n.*, c.Email, c.PhoneNumber FROM NotificationPreferences n INNER JOIN CUSTOMER c ON C.UserId = n.UserID WHERE c.UserID = ?',
+    [authenticatedUserId],
+    (err, results) => {
+      if (err) {
+        console.error('Error querying the database: ' + err);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Internal Server Error' }));
+        return;
+      }
 
-        req.on('end', () => {
-            try {
-              const requestBody = JSON.parse(data);
-              const authenticatedUserId = 1;
-              const query = `UPDATE NotificationPreferences SET EmailNotifications = ?, SMSNotifications = ? WHERE UserID = ?`;
-              db.query(query, [requestBody.EmailNotifications, requestBody.SMSNotifications, authenticatedUserId], (err, result) => {
-                    if (err) {
-                        res.writeHead(500, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ error: 'Internal Server Error' }));
-                    } else {
-                        res.writeHead(200, { 'Content-Type': 'application/json' });
-                        res.end(JSON.stringify({ message: 'Notification preferences updated successfully' }));
-                    }
-                });
-            }
-            catch (error) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: 'Invalid request data' }));
-            }
-        });
+      if (results.length === 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Notification preferences not found for the user' }));
+        return;
+      }
+
+      const notificationPreferences = results[0]; // Assuming a single row for the user
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(notificationPreferences));
     }
-    else {
-        res.writeHead(405, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Method Not Allowed' }));
-    }
-});
+  );
+}
 
+function updateNotificationPreferences(db, req, res){
+  let data = '';
+    
+  req.on('data', (chunk) => {
+    data += chunk;
+  })
 
+  req.on('end', () => {
+      try {
+        const requestBody = JSON.parse(data);
+        const authenticatedUserId = 1;
+        const query = `UPDATE NotificationPreferences SET EmailNotifications = ?, SMSNotifications = ? WHERE UserID = ?`;
+        db.query(query, [requestBody.EmailNotifications, requestBody.SMSNotifications, authenticatedUserId], (err, result) => {
+              if (err) {
+                  res.writeHead(500, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ error: 'Internal Server Error' }));
+              } else {
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ message: 'Notification preferences updated successfully' }));
+              }
+          });
+      }
+      catch (error) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Invalid request data' }));
+      }
+  });
+}
 
-// Start the server
-const port = 3000; // You can use any port you prefer
-server.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
-
-  // Close the database connection on server shutdown
-  process.on('SIGINT', () => {
-    db.end((err) => {
-        if (err) console.error('Error closing the database connection:', err);
-        process.exit();
-    });
-});
+module.exports = {
+  checkReservedBooks,
+  newSubscription,
+  cancelSubscription,
+  getSubscriptions,
+  getNotificationPreferences,
+  updateNotificationPreferences
+};
