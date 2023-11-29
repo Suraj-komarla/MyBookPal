@@ -38,4 +38,3 @@ SELECT U.UserID, B.BookID, 1
 FROM CUSTOMER U
 CROSS JOIN BookListing B
 WHERE U.UserID IN (1, 2, 3, 4, 5);
-
