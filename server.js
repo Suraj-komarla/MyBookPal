@@ -16,8 +16,8 @@ const { handleLogin, handleRegister, handleUpdateCustomer, handleGetAllCustomers
 const connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: 'root',
-  database: 'libraryManagement',
+  password: 'heythere',
+  database: 'project',
 });
 
 // Connect to the database
@@ -33,7 +33,7 @@ const port = 3000;
 
 // Schedule the function to run every 5 minutes
 cron.schedule('*/1 * * * *', () => {
-  console.log('Checking for available books and sending notifications...');
+  //console.log('Checking for available books and sending notifications...');
   checkReservedBooks(connection);
 });
 

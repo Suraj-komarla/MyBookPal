@@ -325,35 +325,6 @@ function getWalletBalance(connection, userId) {
   });
 }
 
-function createCheckoutSession(userId, amount) {
-  return new Promise((resolve, reject) => {
-    stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: 'Wallet Recharge',
-          },
-          unit_amount: amount * 100, // Stripe expects amount in cents
-        },
-        quantity: 1,
-      }],
-      mode: 'payment',
-      success_url: `http://localhost:3000/success.html`, // success page
-      cancel_url: 'http://localhost:3000/cancel.html/', // cancel page
-      client_reference_id: userId.toString(), // Add user ID as client reference
-    }, (error, session) => {
-      if (error) {
-        console.error('Error creating Checkout Session:', error);
-        reject(error);
-      } else {
-        resolve(session);
-      }
-    });
-  });
-}
-
 //Function called when a http request is initiated to checkout from the cart
 function purchaseProduct(connection, req, res) {
   console.log('Received a purchase request');
@@ -471,6 +442,35 @@ function viewPurchaseHistory(connection, req, res) {
         res.end('Internal Server Error');
       });
   }
+}
+
+function createCheckoutSession(userId, amount) {
+  return new Promise((resolve, reject) => {
+    stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Wallet Recharge',
+          },
+          unit_amount: amount * 100, // Stripe expects amount in cents
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `http://localhost:3000/success.html`, // success page
+      cancel_url: 'http://localhost:3000/cancel.html/', // cancel page
+      client_reference_id: userId.toString(), // Add user ID as client reference
+    }, (error, session) => {
+      if (error) {
+        console.error('Error creating Checkout Session:', error);
+        reject(error);
+      } else {
+        resolve(session);
+      }
+    });
+  });
 }
 
 // Assuming userBalances is a global variable or defined in the outer scope
@@ -664,7 +664,7 @@ function addToCart(connection, req, res) {
 
           if (result.length === 0 || result[0].Quantity < quantity) {
             console.log('Insufficient quantity available');
-            reject({ statusCode: 400, message: 'Insufficient quantity available' });
+            reject({ statusCode: 422, message: 'Insufficient quantity available' });
             return;
           }
 
