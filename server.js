@@ -9,6 +9,8 @@ const { getAllBooks, searchBooks, orderBooks, filterBooks, getBook,
  newBook, updateBook, deleteBook, deleteAll } = require('./listAllBooks.js');
 const { viewUserCart, addBalancetoWallet, purchaseProduct, addToCart, viewPurchaseHistory,
  deleteFromCart} = require('./purchase.js');
+const { handleLogin, handleRegister, handleUpdateCustomer, handleGetAllCustomers, 
+ handleGetCustomer, handleGetBooks } = require('./user_auth.js')
 
 //Create a connection to your MySQL database
 const connection = mysql.createConnection({
@@ -37,6 +39,7 @@ cron.schedule('*/1 * * * *', () => {
 
 const server = http.createServer((req, res) => {
   const reqUrl = url.parse(req.url, true);
+  const { pathname } = reqUrl;
 
   if (req.method === 'GET' && reqUrl.pathname.startsWith('/books/availableLending')) {
     listAvailableBooks(connection, req, res)
@@ -96,6 +99,18 @@ const server = http.createServer((req, res) => {
     viewPurchaseHistory(connection, req, res);
   } else if (req.method === 'DELETE' && req.url.startsWith('/delete_from_cart')) {
     deleteFromCart(connection, req, res);
+  } else if (pathname === '/login' && req.method === 'POST') {
+    handleLogin(connection, req, res);
+  } else if (pathname === '/register' && req.method === 'POST') {
+    handleRegister(connection, req, res);
+  } else if (req.method === 'PUT' && pathname.startsWith('/customers/')) {
+    handleUpdateCustomer(connection, req, res, pathname);
+  } else if (req.method === 'GET' && pathname === '/customers') {
+    handleGetAllCustomers(connection, req, res);
+  } else if (req.method === 'GET' && pathname.startsWith('/customers/')) {
+    handleGetCustomer(connection, req, res, pathname);
+  } else if (req.method === 'GET' && pathname.startsWith('/get-books/')) {
+    handleGetBooks(connection, req, res, pathname);
   } 
   else {
     res.writeHead(404, { 'Content-Type': 'text/plain' });

@@ -475,7 +475,7 @@ function viewPurchaseHistory(connection, req, res) {
 
 // Assuming userBalances is a global variable or defined in the outer scope
 const userBalances = {};
-function addBalancetoWallet(connection, req, res) {
+function addBalancetoWallet(req, res) {
   console.log('Received a request to add to the wallet');
   let requestBody = '';
 
@@ -528,7 +528,7 @@ function addBalancetoWallet(connection, req, res) {
   });
 }
 
-function handleSuccess(connection, req, res) {
+function handleSuccess(req, res) {
   const sessionId = req.query.session_id;
 
   const updateQuery = `
