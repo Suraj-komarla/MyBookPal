@@ -6,7 +6,6 @@ const stripe = require('stripe')('sk_test_51OHGwhI1Ek63lRaqSVzjrAYXeY7BqNxhGi2VO
 const success = "http://localhost:3000/success.html"
 // const cancel = "https://buy.stripe.com/test_aEU9Bg95L9Ot5c4bIK"
 
-
 //Function to update the products in the cart - called when user wants to add/delete the products in cart or when the user checksout the cart
 function updateCart(connection, book_id, user_id, action) {
   console.log(`Updating cart for book_id: ${book_id}, user_id: ${user_id}, action: ${action}`);
@@ -628,6 +627,47 @@ function viewUserCart(connection, req, res) {
     });
 }
 
+function getbookdetails(connection, req, res) {
+  const queryParameters = new URLSearchParams(req.url.split('?')[1]);
+  const bookid = queryParameters.get('id');
+
+  if (!bookid || isNaN(bookid)) {
+    res.statusCode = 400; // Bad Request
+    res.end('Invalid Book ID');
+    return;
+  }
+
+  const selectQuery = `
+    SELECT Title, Price FROM booklisting WHERE BookID = ?
+  `;
+
+  new Promise((resolve, reject) => {
+    connection.query(selectQuery, [bookid], (err, results) => {
+      if (err) {
+        console.error('Error querying the database: ' + err.stack);
+        reject(err);
+        return;
+      }
+
+      resolve(results);
+    });
+  })
+    .then((results) => {
+      if (results.length === 0) {
+        res.statusCode = 404;
+        res.end(`Book not found with ID ${bookid}`);
+      } else {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(results));
+      }
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+      res.statusCode = 500;
+      res.end('Internal Server Error for booklisting');
+    });
+}
+
 //Function to add the products to the cart
 function addToCart(connection, req, res) {
   let requestBody = '';
@@ -890,6 +930,38 @@ function placeBid(connection, req, res) {
   });
 }
 
+function getWalletBalance(req, res) {
+  if (req.method === 'GET' && req.url.startsWith('/wallet_balance')) {
+    const queryParameters = new URLSearchParams(req.url.split('?')[1]);
+    const userId = queryParameters.get('id');
+    if (!userId || isNaN(userId)) {
+      res.statusCode = 400;
+      res.end('Invalid User ID');
+      return;
+    }
+    const selectQuery = `
+      SELECT WalletBalance from wallet where UserID = ?
+    `;
+
+    connection.query(selectQuery, [userId], (err, results) => {
+      if (err) {
+        console.error('Error querying the database: ' + err.stack);
+        res.statusCode = 500;
+        res.end('Internal Server Error');
+        return;
+      }
+
+      if (results.length === 0) {
+        res.statusCode = 404; // Not Found
+        res.end(`No wallet balance found for user ${userId}`);
+      } else {
+        const walletBalance = results[0].WalletBalance;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ balance: walletBalance }));
+      }
+    });
+  }
+}
 
 module.exports = {
     viewUserCart,
@@ -898,5 +970,7 @@ module.exports = {
     addToCart,
     addBalancetoWallet,
     purchaseProduct,
-    placeBid
+    placeBid,
+    getbookdetails,
+    getWalletBalance
 }

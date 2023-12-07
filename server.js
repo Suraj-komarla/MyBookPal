@@ -8,7 +8,7 @@ const { checkReservedBooks, newSubscription, cancelSubscription, getSubscription
 const { getAllBooks, searchBooks, orderBooks, filterBooks, getBook,
  newBook, updateBook, deleteBook, deleteAll } = require('./listAllBooks.js');
 const { viewUserCart, addBalancetoWallet, purchaseProduct, addToCart, viewPurchaseHistory,
- deleteFromCart} = require('./purchase.js');
+ deleteFromCart, getbookdetails, getWalletBalance} = require('./purchase.js');
 const { handleLogin, handleRegister, handleUpdateCustomer, handleGetAllCustomers, 
  handleGetCustomer, handleGetBooks } = require('./user_auth.js');
 const { createBookListing, GetBookListing, EditListing, handleGetAuctionHistoryRequest, 
@@ -19,7 +19,7 @@ const { createBookListing, GetBookListing, EditListing, handleGetAuctionHistoryR
 const connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: 'root',
+  password: 'heythere',
   database: 'project',
 });
 
@@ -44,6 +44,16 @@ setInterval(() => {
 }, 60 * 1000);
 
 const server = http.createServer((req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Respond to OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 200;
+    res.end();
+    return;
+  }
+  
   const reqUrl = url.parse(req.url, true);
   const { pathname } = reqUrl;
   const qs = require("qs");
@@ -98,6 +108,11 @@ const server = http.createServer((req, res) => {
     deleteAll(connection, req, res);
   } else if (req.method === 'GET' && req.url.startsWith('/view_cart')) {
     viewUserCart(connection, req, res);
+  } else if (req.method === 'GET' && req.url.startsWith('/cart_value')) {
+    cartvalue(connection, req, res);
+  }
+  else if (req.method === 'GET' && req.url.startsWith('/get_book_details')) {
+    getbookdetails(connection, req, res);
   } else if (req.method === 'POST' && req.url.startsWith('/add_wallet_amount')) {
     addBalancetoWallet(req, res);
   } else if (req.method === 'POST' && req.url.startsWith('/purchase_product')) {
