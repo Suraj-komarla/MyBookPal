@@ -6,7 +6,6 @@ VALUES
 (4, 'Bob', 'Brown', 111111111, 'bobbrown@email.com', '101 Pine St', 'mypass', '2023-11-02 12:15:00', '2023-11-02 12:15:00', '2023-11-02 12:15:00'),
 (5, 'Eva', 'Wilson', 999999999, 'evawilson@email.com', '321 Cedar St', 'eva1234', '2023-11-02 11:20:00', '2023-11-02 11:20:00', '2023-11-02 11:20:00');
 
-
 INSERT INTO Wallet (UserID, WalletBalance)
 SELECT UserID, 100.00
 FROM CUSTOMER;
