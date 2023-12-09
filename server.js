@@ -39,9 +39,9 @@ cron.schedule('*/1 * * * *', () => {
   //console.log('Checking for available books and sending notifications...');
   checkReservedBooks(connection);
 });
-setInterval(() => {
-  checkAndNotifyExpiredAuctions(connection);
-}, 60 * 1000);
+// setInterval(() => {
+//   checkAndNotifyExpiredAuctions(connection);
+// }, 60 * 1000);
 
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -116,7 +116,7 @@ const server = http.createServer((req, res) => {
   } else if (req.method === 'POST' && req.url.startsWith('/add_wallet_amount')) {
     addBalancetoWallet(req, res);
   } else if (req.method === 'GET' && req.url.startsWith('/wallet_balance')) {
-    fetchWalletBalance(req, res);
+    fetchWalletBalance(connection, req, res);
   } 
   else if (req.method === 'POST' && req.url.startsWith('/purchase_product')) {
     purchaseProduct(connection, req, res);

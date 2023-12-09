@@ -299,40 +299,30 @@ function computePrice(connection, bookId, quantity) {
 }
 
 //Function to get the user's wallet amount - Used when user intends to make a purchase
-// function getWalletBalance(connection, req, res) {
-//   return new Promise((resolve, reject) => {
-//     // Extract userId from the URL parameters
-//     const queryParameters = new URLSearchParams(req.url.split('?')[1]);
-//     const userId = queryParameters.get('id');
+function getWalletBalance(connection, userId) {
+  return new Promise((resolve, reject) => {
+    console.log('Fetching wallet balance for UserID:', userId);
+    const selectQuery = 'SELECT WalletBalance FROM wallet WHERE UserID = ?';
+    connection.query(selectQuery, [userId], (err, results) => {
+      if (err) {
+        console.error('Error querying the database: ' + err.stack);
+        reject({ statusCode: 500, message: 'Internal Server Error' });
+        return;
+      }
 
-//     if (!userId || isNaN(userId)) {
-//       reject({ statusCode: 400, message: 'Invalid User ID' });
-//       return;
-//     }
+      console.log('Wallet balance query results:', results);
 
-//     console.log('Fetching wallet balance for UserID:', userId);
-//     const selectQuery = 'SELECT WalletBalance FROM wallet WHERE UserID = ?';
-
-//     connection.query(selectQuery, [userId], (err, results) => {
-//       if (err) {
-//         console.error('Error querying the database: ' + err.stack);
-//         reject({ statusCode: 500, message: 'Internal Server Error' });
-//         return;
-//       }
-
-//       console.log('Wallet balance query results:', results);
-
-//       if (results[0]) {
-//         const walletBalance = results[0].WalletBalance;
-//         console.log('Wallet balance for UserID', userId, ':', walletBalance);
-//         resolve({ balance: walletBalance });
-//       } else {
-//         console.log(`No wallet balance found for user ${userId}`);
-//         reject({ statusCode: 404, message: `No wallet balance found for user ${userId}` });
-//       }
-//     });
-//   });
-// }
+      if (results[0]) {
+        const walletBalance = results[0].WalletBalance;
+        console.log('Wallet balance for UserID', userId, ':', walletBalance);
+        resolve({ balance: walletBalance });
+      } else {
+        console.log(`No wallet balance found for user ${userId}`);
+        reject({ statusCode: 404, message: `No wallet balance found for user ${userId}` });
+      }
+    });
+  });
+}
 
 //Function called when a http request is initiated to checkout from the cart
 function purchaseProduct(connection, req, res) {
@@ -389,12 +379,14 @@ function purchaseProduct(connection, req, res) {
           console.log('Insufficient wallet balance');
           throw { statusCode: 400, message: 'Insufficient wallet balance' };
         }
+
         // Now proceed with the individual product purchases
         const productPurchasePromises = products.map((product) => {
           const { UserID, BookID, Quantity, totalPrice } = product;
 
           return performPurchase(connection, UserID, BookID, Quantity, totalPrice);
         });
+
         return Promise.all(productPurchasePromises);
       })
       .then(() => {
@@ -408,6 +400,47 @@ function purchaseProduct(connection, req, res) {
         res.end(JSON.stringify({ error: error.message || 'Internal Server Error' }));
       });
   });
+}
+
+// Function called when the user wants to check his past purchase history
+function viewPurchaseHistory(connection, req, res) {
+  if (req.method === 'GET' && req.url.startsWith('/purchase_history')) {
+    const queryParameters = new URLSearchParams(req.url.split('?')[1]);
+    const userId = queryParameters.get('id');
+
+    if (!userId || isNaN(userId)) {
+      res.statusCode = 400; // Bad Request
+      res.end('Invalid User ID');
+      return;
+    }
+
+    const selectQuery = 'SELECT * from PurchaseHistory where UserID = ?';
+
+    new Promise((resolve, reject) => {
+      connection.query(selectQuery, [userId], (err, results) => {
+        if (err) {
+          console.error('Error querying the database: ' + err.stack);
+          reject(err);
+          return;
+        }
+
+        resolve(results);
+      });
+    })
+      .then((results) => {
+        if (results.length === 0) {
+          res.statusCode = 404; // Not Found
+          res.end(`There are no previous orders for user ${userId}`);
+        } else {
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(results));
+        }
+      })
+      .catch((error) => {
+        res.statusCode = 500;
+        res.end('Internal Server Error');
+      });
+  }
 }
 
 function createCheckoutSession(userId, amount) {
@@ -550,22 +583,26 @@ function handleSuccess(req, res) {
     });
 }
 
-function getbookdetails(connection, req, res) {
+// Function to view a user's cart
+function viewUserCart(connection, req, res) {
   const queryParameters = new URLSearchParams(req.url.split('?')[1]);
-  const bookid = queryParameters.get('id');
+  const userId = queryParameters.get('id');
 
-  if (!bookid || isNaN(bookid)) {
+  if (!userId || isNaN(userId)) {
     res.statusCode = 400; // Bad Request
-    res.end('Invalid Book ID');
+    res.end('Invalid User ID');
     return;
   }
 
   const selectQuery = `
-    SELECT Title, Price FROM booklisting WHERE BookID = ?
+    SELECT C.*, BL.Title, BL.Price
+    FROM Cart C
+    JOIN BookListing BL ON C.BookID = BL.BookID
+    WHERE C.UserID = ?
   `;
 
   new Promise((resolve, reject) => {
-    connection.query(selectQuery, [bookid], (err, results) => {
+    connection.query(selectQuery, [userId], (err, results) => {
       if (err) {
         console.error('Error querying the database: ' + err.stack);
         reject(err);
@@ -577,17 +614,16 @@ function getbookdetails(connection, req, res) {
   })
     .then((results) => {
       if (results.length === 0) {
-        res.statusCode = 404;
-        res.end(`Book not found with ID ${bookid}`);
+        res.statusCode = 404; // Not Found
+        res.end(`Cart is empty for user_id ${userId}`);
       } else {
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify(results));
       }
     })
     .catch((error) => {
-      console.error('Error:', error);
       res.statusCode = 500;
-      res.end('Internal Server Error for booklisting');
+      res.end('Internal Server Error');
     });
 }
 
@@ -853,132 +889,81 @@ function placeBid(connection, req, res) {
   });
 }
 
-// Function called when the user wants to check his past purchase history
-function viewPurchaseHistory(connection, req, res) {
-  if (req.method === 'GET' && req.url.startsWith('/purchase_history')) {
+function getbookdetails(connection, req, res) {
+  const queryParameters = new URLSearchParams(req.url.split('?')[1]);
+  const bookid = queryParameters.get('id');
+  if (!bookid || isNaN(bookid)) {
+    res.statusCode = 400; // Bad Request
+    res.end('Invalid Book ID');
+    return;
+  }
+  const selectQuery = `
+    SELECT Title, Price FROM booklisting WHERE BookID = ?
+  `;
+  new Promise((resolve, reject) => {
+    connection.query(selectQuery, [bookid], (err, results) => {
+      if (err) {
+        console.error('Error querying the database: ' + err.stack);
+        reject(err);
+        return;
+      }
+      resolve(results);
+    });
+  })
+    .then((results) => {
+      if (results.length === 0) {
+        res.statusCode = 404;
+        res.end(`Book not found with ID ${bookid}`);
+      } else {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(results));
+      }
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+      res.statusCode = 500;
+      res.end('Internal Server Error for booklisting');
+    });
+ }
+
+ function fetchWalletBalance(connection, req, res) {
     const queryParameters = new URLSearchParams(req.url.split('?')[1]);
     const userId = queryParameters.get('id');
 
+    // Validate userId
     if (!userId || isNaN(userId)) {
-      res.statusCode = 400; // Bad Request
-      res.end('Invalid User ID');
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: 'Invalid User ID' }));
       return;
     }
 
-    const selectQuery = 'SELECT * from PurchaseHistory where UserID = ?';
+    const selectQuery = 'SELECT WalletBalance FROM wallet WHERE UserID = ?';
 
-    new Promise((resolve, reject) => {
-      connection.query(selectQuery, [userId], (err, results) => {
-        if (err) {
-          console.error('Error querying the database: ' + err.stack);
-          reject(err);
-          return;
-        }
-
-        resolve(results);
-      });
-    })
-      .then((results) => {
-        if (results.length === 0) {
-          res.statusCode = 404; // Not Found
-          res.end(`There are no previous orders for user ${userId}`);
-        } else {
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify(results));
-        }
-      })
-      .catch((error) => {
+    // Use a prepared statement to avoid SQL injection
+    connection.query(selectQuery, [userId], (err, results) => {
+      if (err) {
+        console.error('Error querying the database: ' + err.stack);
         res.statusCode = 500;
-        res.end('Internal Server Error');
-      });
-  }
-}
-
-// Function to view a user's cart
-function viewUserCart(connection, req, res) {
-  const queryParameters = new URLSearchParams(req.url.split('?')[1]);
-  const userId = queryParameters.get('id');
-
-  if (!userId || isNaN(userId)) {
-    res.statusCode = 400; // Bad Request
-    res.end('Invalid User ID');
-    return;
-  }
-
-  const selectQuery = `
-    SELECT C.*, BL.Title, BL.Price
-    FROM Cart C
-    JOIN BookListing BL ON C.BookID = BL.BookID
-    WHERE C.UserID = ?
-  `;
-
-  new Promise((resolve, reject) => {
-    connection.query(selectQuery, [userId], (err, results) => {
-      if (err) {
-        console.error('Error querying the database: ' + err.stack);
-        reject(err);
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ error: 'Internal Server Error' }));
         return;
       }
 
-      resolve(results);
-    });
-  })
-    .then((results) => {
       if (results.length === 0) {
         res.statusCode = 404; // Not Found
-        res.end(`Cart is empty for user_id ${userId}`);
-      } else {
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify(results));
+        res.end(JSON.stringify({ error: `No wallet balance found for user ${userId}` }));
+      } else {
+        const walletBalance = results[0].WalletBalance;
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ balance: walletBalance }));
       }
-    })
-    .catch((error) => {
-      res.statusCode = 500;
-      res.end('Internal Server Error');
     });
 }
 
-function getWalletBalance(connection, req, res) {
-  const queryParameters = new URLSearchParams(req.url.split('?')[1]);
-  const userId = queryParameters.get('id');
-
-  if (!userId || isNaN(userId)) {
-    res.statusCode = 400; // Bad Request
-    res.end('Invalid User ID');
-    return;
-  }
-
-  const selectQuery = `
-  SELECT WalletBalance from wallet where UserID = ?
-  `;
-
-  new Promise((resolve, reject) => {
-    connection.query(selectQuery, [userId], (err, results) => {
-      if (err) {
-        console.error('Error querying the database: ' + err.stack);
-        reject(err);
-        return;
-      }
-
-      resolve(results);
-    });
-  })
-    .then((results) => {
-      if (results.length === 0) {
-        res.statusCode = 404; // Not Found
-        res.end(`Wallet is not found for user_id ${userId}`);
-      } else {
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify(results));
-      }
-    })
-    .catch((error) => {
-      res.statusCode = 500;
-      res.end('Internal Server Error');
-    });
-}
-
-
+ 
 module.exports = {
     viewUserCart,
     viewPurchaseHistory,
@@ -988,5 +973,5 @@ module.exports = {
     purchaseProduct,
     placeBid,
     getbookdetails,
-    getWalletBalance
+    fetchWalletBalance
 }
