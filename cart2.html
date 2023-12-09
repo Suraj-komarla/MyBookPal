@@ -51,14 +51,6 @@
                 </tr>
             </thead>
             <tbody id="cartDetails"></tbody>
-            <!-- Additional cart contents will be dynamically added here -->
-            <!-- tax + subtotal -->
-            <!-- <tr class="extracosts">
-                <td class="light">Shipping &amp; Tax</td>
-                <td colspan="2" class="light"></td>
-                <td>$35.00</td>
-                <td>&nbsp;</td>
-            </tr> -->
             <tr class="totalprice">
                 <td class="light">Total:</td>
                 <td colspan="2">&nbsp;</td>
@@ -76,9 +68,6 @@
                 </td>
             </tr>
         </table>
-
-        
-        
     </div>
     <script>
         const serverURL = 'http://localhost:3000';
@@ -119,36 +108,41 @@
 
         // Function to display cart details on the page
         async function displayCartDetails(userId) {
-            const cartDetails = await fetchCartDetails(userId);
-
-            if (cartDetails.length > 0) {
+            try {
+                const cartDetails = await fetchCartDetails(userId);
                 const tbody = document.getElementById('cartDetails');
-                let finalCartValue = 0;
-                const bookDetailsPromises = cartDetails.map(async item => {
-                    const bookDetails = await fetchBookDetails(item.BookID);
-                    const totalPrice = item.Quantity * bookDetails[0].Price;
-                    finalCartValue += totalPrice; 
-                    const walletamount = 450;
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${bookDetails[0].Title}</td>
-                        <td>${item.Quantity}</td>
-                        <td>${totalPrice.toFixed(2)}</td>
-                        <td><span class="remove" onclick="removeItem(this)"><img
+                tbody.innerHTML = ''; // Clear the existing content before adding new items
+                if (cartDetails.length > 0) {
+                    let finalCartValue = 0;
+                    for (const item of cartDetails) {
+                        const bookDetails = await fetchBookDetails(item.BookID);
+                        const totalPrice = item.Quantity * bookDetails[0].Price;
+                        finalCartValue += totalPrice;
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${bookDetails[0].Title}</td>
+                            <td>${item.Quantity}</td>
+                            <td>${totalPrice.toFixed(2)}</td>
+                            <td><span class="remove" onclick="removeItem(this)"><img
                                     src="https://i.imgur.com/h1ldGRr.png" alt="X"></span></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-
-                await Promise.all(bookDetailsPromises);
-                document.querySelector('.totalprice td span.thick').innerText = `$${finalCartValue.toFixed(2)}`;
-                const walletAmount = 450; // Replace this with the actual wallet amount
-                document.querySelector('.walletamount td span.thick').innerText = `$${walletAmount.toFixed(2)}`;
-
-            } else {
-                // No items in the cart
-                document.getElementById('cartDetails').innerHTML = 'No items in the cart.';
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                    document.querySelector('.totalprice td span.thick').innerText = `$${finalCartValue.toFixed(2)}`;
+                    // Fetch and update wallet amount separately
+                    const walletResponse = await fetch(`${serverURL}/getWalletBalance?id=${userId}`);
+                    const walletData = await walletResponse.json();
+                    const walletAmount = walletData.balance;
+                    document.querySelector('.walletamount td span.thick').innerText = `$${walletAmount.toFixed(2)}`;
+                } else {
+                    // No items in the cart
+                    document.querySelector('.totalprice td span.thick').innerText = '$0.00';
+                    document.querySelector('.walletamount td span.thick').innerText = '$0.00';
+                    document.getElementById('cartDetails').innerHTML = 'No items in the cart.';
+                }
+            } catch (error) {
+                console.error('Error fetching cart details:', error);
+                // Handle error, e.g., display an error message to the user
             }
         }
 

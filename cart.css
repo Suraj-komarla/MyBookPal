@@ -112,19 +112,19 @@ header {
     table-layout: fixed; /* Ensures the table width is determined by the width of columns */
 }
 #cart tr {
-    vertical-align: middle; 
+    text-align: middle; 
 }
 
 #cart th{
     border: none;
     padding: 18px;
-    vertical-align: left; 
+    text-align: left; 
 }
 
 #cart td {
     border: none;
     padding: 18px;
-    vertical-align: middle; 
+    text-align: middle; 
 }
 
 #cart th {

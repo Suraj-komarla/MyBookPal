@@ -115,7 +115,10 @@ const server = http.createServer((req, res) => {
     getbookdetails(connection, req, res);
   } else if (req.method === 'POST' && req.url.startsWith('/add_wallet_amount')) {
     addBalancetoWallet(req, res);
-  } else if (req.method === 'POST' && req.url.startsWith('/purchase_product')) {
+  } else if (req.method === 'GET' && req.url.startsWith('/wallet_balance')) {
+    getWalletBalance(req, res);
+  } 
+  else if (req.method === 'POST' && req.url.startsWith('/purchase_product')) {
     purchaseProduct(connection, req, res);
   } else if (req.method === 'POST' && req.url.startsWith('/add_cart')) {
     addToCart(connection, req, res);
