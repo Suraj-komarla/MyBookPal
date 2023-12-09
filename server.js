@@ -8,7 +8,7 @@ const { checkReservedBooks, newSubscription, cancelSubscription, getSubscription
 const { getAllBooks, searchBooks, orderBooks, filterBooks, getBook,
  newBook, updateBook, deleteBook, deleteAll } = require('./listAllBooks.js');
 const { viewUserCart, addBalancetoWallet, purchaseProduct, addToCart, viewPurchaseHistory,
- deleteFromCart, getbookdetails, getWalletBalance} = require('./purchase.js');
+ deleteFromCart, getbookdetails, fetchWalletBalance} = require('./purchase.js');
 const { handleLogin, handleRegister, handleUpdateCustomer, handleGetAllCustomers, 
  handleGetCustomer, handleGetBooks } = require('./user_auth.js');
 const { createBookListing, GetBookListing, EditListing, handleGetAuctionHistoryRequest, 
@@ -116,7 +116,7 @@ const server = http.createServer((req, res) => {
   } else if (req.method === 'POST' && req.url.startsWith('/add_wallet_amount')) {
     addBalancetoWallet(req, res);
   } else if (req.method === 'GET' && req.url.startsWith('/wallet_balance')) {
-    getWalletBalance(req, res);
+    fetchWalletBalance(req, res);
   } 
   else if (req.method === 'POST' && req.url.startsWith('/purchase_product')) {
     purchaseProduct(connection, req, res);
