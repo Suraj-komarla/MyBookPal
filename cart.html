@@ -74,7 +74,7 @@
 
     <script>
         const serverURL = 'http://localhost:3000';
-        const userId = 1;
+        const userId = 3;
         // Display cart details on page load
         document.addEventListener("DOMContentLoaded", function () {
             displayCartDetails(userId);
@@ -197,51 +197,56 @@
             console.error('Error updating total price:', error);
         }
     }
-
         
     async function purchaseNow(userId) {
-            try {
-                // Fetch the cart details to include in the purchase request
-                const cartDetails = await fetchCartDetails(userId);
-
-                // Check if the cart is not empty
-                if (cartDetails.length === 0) {
-                    alert('Cart is empty. Add items to the cart before purchasing.');
-                    return;
-                }
-
-                // Prepare the purchase request body
-                const requestBody = JSON.stringify(cartDetails.map(item => ({
-                    UserID: userId,
-                    BookID: item.BookID,
-                    Quantity: item.Quantity
-                })));
-
-                // Make a request to the backend to initiate the purchase
-                const response = await fetch(`${serverURL}/purchase_product`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: requestBody,
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-
-                // If the purchase is successful, update the UI or perform any necessary actions
-                console.log('Purchase successful!');
-                alert('Purchase successful!');
-                
-                // Optionally, you can clear the cart and update the displayed cart details
-                displayCartDetails(userId);
-            } catch (error) {
-                // If there's an error during the purchase, display a popup with the error message
-                console.error('Error during purchase:', error);
-                alert('Error during purchase: ' + error.message);
-            }
+    try {
+        // Fetch the cart details to include in the purchase request
+        const cartDetails = await fetchCartDetails(userId);
+        // Check if the cart is not empty
+        if (cartDetails.length === 0) {
+            alert('Cart is empty. Add items to the cart before purchasing.');
+            return;
         }
+        // Prepare the purchase request body
+        const requestBody = JSON.stringify(cartDetails.map(item => ({
+            UserID: userId,
+            BookID: item.BookID,
+            Quantity: item.Quantity
+        })));
+        // Make a request to the backend to initiate the purchase
+        const response = await fetch(`${serverURL}/purchase_product`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: requestBody,
+        });
+
+        if (!response.ok) {
+            // Handle specific error messages from the backend
+            const responseData = await response.json();
+            if (responseData.error) {
+                // Alert for specific error messages
+                alert(responseData.error);
+            } else {
+                // For unexpected errors, display a generic error message
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+        } else {
+            // If the purchase is successful, update the UI or perform any necessary actions
+            console.log('Purchase successful!');
+            // Optionally, you can clear the cart and update the displayed cart details
+            displayCartDetails(userId);
+        }
+    } catch (error) {
+        // If there's an unexpected error during the purchase, display a generic error message
+        console.error('Error during purchase:', error);
+        alert('Error during purchase: Something went wrong. Please try again.');
+    }
+}
+
+
+
 
     
     </script>

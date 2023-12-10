@@ -114,7 +114,7 @@ const server = http.createServer((req, res) => {
   else if (req.method === 'GET' && req.url.startsWith('/get_book_details')) {
     getbookdetails(connection, req, res);
   } else if (req.method === 'POST' && req.url.startsWith('/add_wallet_amount')) {
-    addBalancetoWallet(req, res);
+    addBalancetoWallet(connection, req, res);
   } else if (req.method === 'GET' && req.url.startsWith('/wallet_balance')) {
     fetchWalletBalance(connection, req, res);
   }else if (req.method === 'DELETE' && req.url.startsWith('/delete_item_from_cart')) {
