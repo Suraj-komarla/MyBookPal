@@ -22,8 +22,8 @@ const showBookDetails = require("./bookdetails.js");
 const connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: 'password',
-  database: 'libraryManagement'
+  password: 'loveCandy',
+  database: 'project'
 });
 
 // Connect to the database
@@ -132,6 +132,8 @@ const server = http.createServer((req, res) => {
     handleGetCustomer(connection, req, res, pathname);
   } else if (req.method === 'GET' && pathname.startsWith('/get-books/')) {
     handleGetBooks(connection, req, res, pathname);
+  } else if (req.method === "POST" && pathname.startsWith("/book/placeBid")) {
+    placeBid(connection, req, res);
   } else if (req.method === "POST" && pathname.startsWith("/book")) {
     createBookListing(req, res, params, body, contentType,connection);
   } else if (req.method === "GET" && pathname.startsWith("/book/listing")) {
@@ -146,8 +148,6 @@ const server = http.createServer((req, res) => {
     handleGetFilterListingsRequest(req, res, params,connection);
   } else if (req.method === "PUT" && pathname.startsWith("/book/editauction")) {
     handlePutEditAuctionRequest(req, res, params, body,connection);
-  } else if (req.method === "POST" && pathname.startsWith("/book/placeBid")) {
-    placeBid(connection, req, res);
   } else if (req.method === "DELETE" && pathname.startsWith("/book/deletelisting")) {
     handleDeleteListingRequest(req, res, params,connection);
   } else if (req.method === "DELETE" && pathname.startsWith("/book/deleteauction")) {

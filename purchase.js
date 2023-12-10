@@ -791,182 +791,246 @@ function placeBid(connection, req, res) {
       var curr_Wallet;
       var firstBid=true;
       var currentBid, minimumIncrement;
-      return new Promise((resolve, reject) => {
-        const selectQuery = 'SELECT WalletBalance FROM wallet WHERE UserID = ?';
-        connection.query(selectQuery, [userId], (err, results) => {
-          if (err) {
-            console.error('Error querying the database: ' + err.stack);
-            reject({ statusCode: 500, message: 'Internal Server Error' });
-            return;
-          }
-          console.log('Wallet balance query results:', results);
-          if (results[0]) {
-            curr_Wallet = results[0].WalletBalance;
-          } 
-          else {
-            console.log(`No wallet balance found for user ${userId}`);
-            reject({ statusCode: 404, message: `No wallet balance found for user ${user_id}` });
-          }
-        });
+      var previousPriceList, previousAutoBid, previousMaxLimit;
+      var newCurrBidVal, newBuyerID, currMaxLimit, currMaxBuyer, maxPriceList;
+      var newPriceListVal, deductVal;
+      Promise.resolve().then(()=>{
+        return new Promise((resolve, reject) => {
+          const selectQuery = 'SELECT WalletBalance FROM wallet WHERE UserID = ?';
+          connection.query(selectQuery, [user_id], (err, results) => {
+            if (err) {
+              console.error('Error querying the database: ' + err.stack);
+              reject({ statusCode: 500, message: 'Internal Server Error' });
+              return;
+            }
+            console.log('Wallet balance query results:', results);
+            if (results[0]) {
+              curr_Wallet = results[0].WalletBalance;
+              resolve();
+            } 
+            else {
+              console.log(`No wallet balance found for user ${user_id}`);
+              reject({ statusCode: 404, message: `No wallet balance found for user ${user_id}` });
+              return;
+            }
+          });
+        }).then(() =>{
+          return new Promise((resolve, reject) => {
         const selectAuctionQuery= 'SELECT EndDateTime, CurrentBid, MinimumIncrement FROM Auction WHERE BookID= ?';
         var currentTime= new Date();
         connection.query(selectAuctionQuery, [book_id], (err, results) =>{
           if(err){
             console.error('Error querying the database: ' + err.stack);
-            reject({statusCode: 500, message: 'Internal Server Error'});
+            reject({statusCode: 400, message: 'Internal Server Error'});
             return;
           }
           console.log('Auction details are: ', results);
-          if(results[0] && currentTime<results[0].EndDateTime){
+          if(results.length>0 & currentTime<results[0].EndDateTime){
             console.log('Auction is Valid');
             currentBid=results[0].CurrentBid;
             minimumIncrement=results[0].MinimumIncrement;
+            resolve();
           }
           else{
             console.log(`No auction found for book: ${book_id}`);
             reject({statusCode: 404, message: `No auction found for book ${book_id}`});
             return;
           }
+          });
         });
-        const userBidQuery= 'SELECT * FROM Bids WHERE BookID= ? AND UserID= ?';
-        var previousPriceList, previousAutoBid, previousMaxLimit;
-        connection.query(userBidQuery, [book_id, user_id], (err, results) =>{
-          if(err){
-            console.error('Error querying the database: '+ err.stack);
-            reject({statusCode: 500, message: 'Internal Server Error'});
-            return;
-          }
-          console.log('Previous bids: ', results);
-          if(results.length > 0 & results[0]){
-            firstBid=false;
-            previousPriceList=results[0].PriceList;
-            previousAutoBid=results[0].AutoBid;
-            previousMaxLimit=results[0].MaxLimit;
-          }
-        });
-        if (!book_id || !user_id || !priceList || !maxLimit) {
-          console.error('Invalid parameters for participating in auction');
-          reject({ statusCode: 400, message: 'Invalid parameters' });
-          return;
-        }
-        if(firstBid){
-          if(priceList > curr_Wallet ){
-            console.error('Invalid parameters for placing bid. Reason: Insufficient funds in your wallet');
-            reject({statusCode: 400, message: 'Invalid parameters: Insufficient funds'});
-            return;
-          }
-          if(priceList<currentBid+minimumIncrement){
-            console.error('Invalid parameters for placing bid. Reason: Incorrect bid');
-            reject({statusCode: 400, message: 'Invalid parameters: Incorrect bid'});
-            return;
-          }
-          const insertBidQuery = `INSERT INTO Bids (UserID, BookID, PriceList, MaxLimit, AutoBid) VALUES (?, ?, ?, ?, ?);`;
-          connection.query(insertBidQuery, [user_id, book_id, priceList, maxLimit, autoBid], (err) => {
-            if (err) {
-              console.error('Error adding a new bid: ' + err.stack);
-              reject({ statusCode: 500, message: 'Error adding new bid' });
+        }).then(() => {
+          return new Promise((resolve, reject) => {
+            const userBidQuery= 'SELECT * FROM Bids WHERE BookID= ? AND UserID= ?';
+            connection.query(userBidQuery, [book_id, user_id], (err, results) =>{
+              if(err){
+                console.error('Error querying the database: '+ err.stack);
+                reject({statusCode: 500, message: 'Internal Server Error'});
+                return;
+              }
+              console.log('Previous bids: ', results);
+              console.log(results.length);
+              if(results.length > 0){
+                firstBid=false;
+                previousPriceList=results[0].PriceList;
+                previousAutoBid=results[0].AutoBid;
+                previousMaxLimit=results[0].MaxLimit;
+                resolve();
+              }
+              resolve();
+            });
+          });
+        }).then(() =>{
+          return new Promise((resolve, reject) => {
+            if (!book_id || !user_id || !priceList || maxLimit==null) {
+              console.error('Invalid parameters for participating in auction');
+              reject({ statusCode: 400, message: 'Invalid parameters' });
               return;
             }
-            if(autoBid==true){
-              updateWallet(connection, UserID, maxLimit, 'sub');
+            console.log("This is firstBid value "+firstBid);
+            if(firstBid){
+              if(priceList > curr_Wallet ){
+                console.error('Invalid parameters for placing bid. Reason: Insufficient funds in your wallet');
+                reject({statusCode: 400, message: 'Invalid parameters: Insufficient funds'});
+                return;
+              }
+              if(priceList<currentBid+minimumIncrement){
+                console.error('Invalid parameters for placing bid. Reason: Incorrect bid');
+                reject({statusCode: 400, message: 'Invalid parameters: Incorrect bid'});
+                return;
+              }
+              const insertBidQuery = `INSERT INTO Bids (UserID, BookID, PriceList, MaxLimit, AutoBid) VALUES (?, ?, ?, ?, ?);`;
+              connection.query(insertBidQuery, [user_id, book_id, priceList, maxLimit, autoBid], (err) => {
+                if (err) {
+                  console.error('Error adding a new bid: ' + err.stack);
+                  reject({ statusCode: 500, message: 'Error adding new bid' });
+                  return;
+                }
+                if(autoBid==true){
+                  deductVal=parseInt(curr_Wallet)-parseInt(maxLimit);
+                }
+                else{
+                  console.log(curr_Wallet);
+                  console.log(priceList);
+                  deductVal=parseInt(curr_Wallet)-parseInt(priceList);
+                }
+                console.log('Successfully participating in the bid');
+                resolve({ statusCode: 200, message: 'Your are in the auction' });
+              });
             }
             else{
-              updateWallet(connection, UserID, priceList, 'sub');
+              if(priceList<currentBid+minimumIncrement){
+                console.error('Invalid parameters for placing bid. Reason: Incorrect bid');
+                reject({statusCode: 400, message: 'Invalid parameters: Incorrect bid'});
+                return;
+              }
+              let priceArray=previousPriceList.split(';');
+              let prevPriceVal=parseInt(priceArray[0]);
+              deductVal=curr_Wallet-parseInt(priceList)+prevPriceVal;
+              newPriceList= priceList+';'+previousPriceList;
+              //console.log("This is previous price list: "+previousPriceList);
+              const updateBidQuery = `UPDATE Bids SET PriceList=? WHERE UserID= ? and BookID = ?`;
+              connection.query(updateBidQuery, [newPriceList, user_id, book_id], (err) => {
+                if(err){
+                  console.error('Error updating bid: '+ err.stack);
+                  reject({statusCode: 500, message: 'Error updating a bid'});
+                  return;
+                }
+              });
+              resolve();
             }
-            console.log('Successfully participating in the bid');
-            resolve({ statusCode: 200, message: 'Your are in the auction' });
           });
-        }
-        else{
-          if(priceList<currentBid+minimumIncrement || priceList<previousMaxLimit){
-            console.error('Invalid parameters for placing bid. Reason: Incorrect bid');
-            reject({statusCode: 400, message: 'Invalid parameters: Incorrect bid'});
-            return;
-          }
-          newPriceList= priceList+';'+previousPriceList;
-          const updateBidQuery = `UPDATE Bids SET PriceList=${newPriceList} WHERE UserID= ? and BookID = ?`;
-          connection.query(updateBidQuery, [user_id, book_id], (err) => {
-            if(err){
-              console.error('Error updating bid: '+ err.stack);
-              reject({statusCode: 500, message: 'Error updating a bid'});
-              return;
+        }).then(()=>{
+          return new Promise((resolve, reject) =>{
+            //console.log("Starting the deduction");
+            const updateWalletQuery=`UPDATE Wallet SET WalletBalance=? WHERE UserID=?`;
+            //console.log("Here is the value to be set in wallet: "+ deductVal);
+            connection.query(updateWalletQuery, [deductVal, user_id], (err)=>{
+              if(err){
+                console.error('Error reducing amount from Wallet: '+err.stack);
+                reject({statusCode: 500, message: 'Error deducting amount from wallet'});
+                return;
+              }
+              resolve();
+            })
+          });
+        }).then(() =>{
+          return new Promise((resolve, reject) =>{
+            const pullMaxBid=`SELECT MAX(MaxLimit) as maxLimitVal, UserID, GROUP_CONCAT(PriceList) as PriceList FROM Bids WHERE AutoBid = TRUE AND BookID = ? GROUP BY BookID, UserID;`;
+            connection.query(pullMaxBid, [book_id], (err, results) => {
+              if(err){
+                console.error('Error while getting data from Bids table: '+err.stack);
+                reject({statusCode: 500, message: 'Error getting the maxLimit'});
+                return;
+              }
+              // console.log("maxLimit results: "+ results[0].PriceList);
+              // console.log(results.length);
+              if(results.length ==0){
+                currMaxBuyer=user_id;
+                currMaxLimit=maxLimit;
+                maxPriceList=priceList;
+              }
+              if(results.length>0){
+                currMaxBuyer=results[0].UserID;
+                currMaxLimit=results[0].maxLimitVal;
+                maxPriceList=results[0].PriceList;
+              }
+              resolve();
+            });
+          });
+        }).then(() =>{
+          return new Promise((resolve, reject) =>{
+            if(autoBid==true & currMaxBuyer != user_id & currMaxLimit>maxLimit){
+              newBuyerID=currMaxBuyer;
+              newCurrBidVal=min(currMaxLimit, maxLimit+minimumIncrement);
+              newPriceListVal="";
+              newPriceListVal=newCurrBidVal+';'+maxPriceList;
+              const updateAutoBid1=`UPDATE Bids SET PriceList=? WHERE BookID= ? AND UserID = ?`;
+              connection.query(updateAutoBid1, [newPriceListVal, book_id, newBuyerID], (err)=>{
+                if(err){
+                  console.error('Error while updating pricelist due to autobid: '+err.stack);
+                  reject({statusCode: 500, message: 'Error updating pricelist bid due to autobid'});
+                  return;
+                }
+                resolve();
+              });
+            }
+            else if(currMaxLimit>=priceList+minimumIncrement & currMaxBuyer != user_id){
+              newCurrBidVal=priceList+minimumIncrement;
+              newBuyerID=currMaxBuyer;
+              newPriceListVal="";
+              newpiceListval=newCurrBidVal+';'+maxPriceList;
+              const updateAutoBid=`UPDATE Bids SET PriceList=? WHERE BookID= ? AND UserID= ?`;
+              connection.query(updateAutoBid, [newpiceListval, book_id, currMaxBuyer], (err) => {
+                if(err){
+                  console.error('Error while updating pricelist due to autobid: '+err.stack);
+                  reject({statusCode: 500, message: 'Error updating pricelist bid due to autobid'});
+                  return;
+                }
+                resolve();
+              });
+            }
+            else{
+              newBuyerID=user_id;
+              newCurrBidVal=priceList;
+              resolve();
             }
           });
-        }
-        var newCurrBidVal;
-        var newBuyerID;
-        var currMaxLimit, currMaxBuyer, maxPriceList;
-        const pullMaxBid=`SELECT MAX(MaxLimit) as maxLimitVal, UserID, PriceList FROM Bids WHERE AutoBid=TRUE, BookID= ?`;
-        connection.query(pullMaxBid, [book_id], (err, results) => {
-          if(err){
-            console.error('Error while getting data from Bids table: '+err.stack);
-            reject({statusCode: 500, message: 'Error getting the maxLimit'});
-            return;
-          }
-          console.log("maxLimit results: "+ results);
-          if(results.length ==0){
-            currMaxBuyer=user_id;
-            currMaxLimit=maxLimit;
-            maxPriceList=priceList;
-          }
-          if(results.length>0 & results[0]){
-            currMaxBuyer=results[0].UserID;
-            currMaxLimit=results[0].maxLimitVal;
-            maxPriceList=results[0].PriceList;
-          }
+        }).then(()=>{
+          return new Promise((resolve, reject) =>{
+            const updateCurrBid= `UPDATE Auction SET CurrentBid=?, BuyerID=? WHERE BookID= ?`;
+            connection.query(updateCurrBid, [newCurrBidVal, newBuyerID, book_id], (err) =>{
+              if(err){
+                console.error('Error updating current bid: '+ err.stack);
+                reject({statusCode: 500, message: 'Error updating current bid value'});
+                return;
+              }
+              resolve();
+            });
+          });
+        }).then(()=>{
+          return new Promise((resolve, reject)=>{
+            if(autoBid==true){
+              if(!maxLimit || maxLimit>curr_Wallet){
+                console.error('Invalid parameters for participating in auction');
+                reject({ statusCode: 400, message: 'Invalid parameters' });
+                return;
+              }
+              else{
+                resolve({statusCode: 200, message: 'Success'});
+              }
+            }
+            else{
+              resolve({statusCode: 200, message: 'Success'});
+            }
+          });
+        }).then((result) => {
+          console.log(result);
+          res.writeHead(result.statusCode, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ message: result.message }));
+        }).catch((error) => {
+          res.writeHead(error.statusCode, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: error.message }));
         });
-        if(autoBid==true & currMaxBuyer != user_id & currMaxLimit>maxLimit){
-          newBuyerID=currMaxBuyer;
-          newCurrBidVal=min(currMaxLimit, maxLimit+minimumIncrement);
-          var newPriceListVal=newCurrBidVal+';'+maxPriceList;
-          const updateAutoBid1=`UPDATE Bids SET PriceList=${newPriceListVal} WHERE BookID= ? AND UserID = ?`;
-          connection.query(updateAutoBid1, [book_id, newBuyerID], (err)=>{
-            if(err){
-              console.error('Error while updating pricelist due to autobid: '+err.stack);
-              reject({statusCode: 500, message: 'Error updating pricelist bid due to autobid'});
-              return;
-            }
-          });
-        }
-        else if(currMaxLimit>=priceList+minimumIncrement & currMaxBuyer != user_id){
-          newCurrBidVal=priceList+minimumIncrement;
-          newBuyerID=currMaxBuyer;
-          var newpiceListval=newCurrBidVal+';'+maxPriceList;
-          const updateAutoBid=`UPDATE Bids SET PriceList=${newpiceListval} WHERE BookID= ? AND UserID= ?`;
-          connection.query(updateAutoBid, [book_id, currMaxBuyer], (err) => {
-            console.error('Error while updating pricelist due to autobid: '+err.stack);
-            reject({statusCode: 500, message: 'Error updating pricelist bid due to autobid'});
-            return;
-          });
-        }
-        else{
-          newBuyerID=user_id;
-          newCurrBidVal=priceList;
-        }
-        const updateCurrBid= `UPDATE Auction SET CurrentBid=${newCurrBidVal}, BuyerID=${newBuyerID} WHERE BookID= ?`;
-        connection.query(updateCurrBid, [book_id], (err) =>{
-          if(err){
-            console.error('Error updating current bid: '+ err.stack);
-            reject({statusCode: 500, message: 'Error updating current bid value'});
-            return;
-          }
-        });
-        if(autoBid==true){
-          if(!maxLimit || maxLimit>curr_Wallet){
-            console.error('Invalid parameters for participating in auction');
-            reject({ statusCode: 400, message: 'Invalid parameters' });
-            return;
-          }
-        }
-      })
-      .then((result) => {
-        // Use writeHead instead of status
-        res.writeHead(result.statusCode, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: result.message }));
-      })
-      .catch((error) => {
-        res.writeHead(error.statusCode, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: error.message }));
       });
     } catch (error) {
       console.error('Error parsing request body:', error);
@@ -976,6 +1040,7 @@ function placeBid(connection, req, res) {
     }
   });
 }
+
 
 
 module.exports = {
