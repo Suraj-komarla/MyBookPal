@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Form</title>
+</head>
+<body class='login' style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; text-align: center; font-family: Arial, sans-serif; background-color: #e7f3ff; position: relative; overflow: hidden;">
+
+    <!-- Watermark text at the very top of the page, above all content -->
+    <div style="position: absolute; top: 0.009%; left: 50%; transform: translateX(-50%); font-size: 7em; color: #1a3962; opacity: 0.2; white-space: nowrap; z-index: 1000;">
+        mybookpal
+    </div>
+
+    <div style="width: 300px; padding: 20px; border: 1px solid #ccc; box-shadow: 0 4px 8px rgba(0,0,0,0.1); background-color: white; border-radius: 8px; position: relative; z-index: 10;">
+        <h2 style="margin-top: 0;">User-Login</h2>
+
+        <form id="loginForm" class="loginForm" form action="/login" method="post" >
+            <label for="emailid" style="display: block; text-align: left;">Email-ID:</label>
+            <input type="emailid" id="emailid" name="emailid" required style="width: 100%; margin-bottom: 10px;"><br>
+
+            <label for="password" style="display: block; text-align: left;">Password:</label>
+            <input type="password" id="password" name="password" required style="width: 100%; margin-bottom: 10px;"><br>
+
+            <div style="text-align: left; margin-bottom: 10px; display: flex; justify-content: space-between; font-size: 12px;">
+                <label>
+                    <input type="checkbox" id="rememberMe" name="remember">
+                    Remember me
+                </label>
+                <span onclick="forgotPassword()" style="cursor: pointer; text-decoration: underline;">Forgot your password?</span>
+            </div>
+
+            <!-- <button id="SignIn" onclick="handleLogin()" type="button" style="width: 100%; padding: 10px; border: none; background-color: #007bff; color: white; border-radius: 4px; margin-bottom: 10px;">Sign In</button> -->
+            <button id="SignIn" type="submit" style="width: 100%; padding: 10px; border: none; background-color: #007bff; color: white; border-radius: 4px; margin-bottom: 10px;">Sign In</button>
+
+            <p>OR</p>
+            <!-- <button onclick="loginWithGoogle()" style="margin-bottom: 10px; width: 100%; padding: 10px; background-color: #db4437; color: white; border: none; border-radius: 4px;">Continue with Google</button>
+            <button onclick="loginWithFacebook()" style="margin-bottom: 20px; width: 100%; padding: 10px; background-color: #4267B2; color: white; border: none; border-radius: 4px;">Continue with Facebook</button> -->
+            <button id="CreateUser" type="button" style="width: 100%; padding: 10px; border: none; background-color: #007bff; color: white; border-radius: 4px; margin-bottom: 10px;">Join Us</button>
+            <!-- <button id="CreateUser" type="button" style="width: 100%; padding: 10px; border: none; background-color: #007bff; color: white; border-radius: 4px; margin-bottom: 10px;">Join Us</button> -->
+            <!-- <a  id = "CreateUser" style="display: inline-block; width: 80%; padding: 10px; border: 1px solid #ccc; background-color: white; border-radius: 4px; text-align: center; text-decoration: none; color: black;">Create an Account</a> -->
+            <!-- <button id = "CreateUser" type="button" style="width: 100%; padding: 10px; border: 1px solid #ccc; background-color: white; border-radius: 4px;">Create an Account</button> -->
+        </form>
+
+        <p style="font-size: smaller; margin-top: 10px;">
+            By signing in you are agreeing to our 
+            <a href="terms.html">Terms of Use</a> 
+            and our 
+            <a href="privacy.html">Privacy Policy</a>.
+        </p>
+    </div>
+    <script>
+
+function handleLogin() {
+        // Make an API call to subscribe to the book
+        const backendURL = 'http://localhost:3000';
+        const endpoint = `/login`;
+        var emailid = document.getElementById('emailid').value;
+        var password = document.getElementById('password').value;
+
+
+        console.log(emailid);
+        console.log(password);
+        fetch(`${backendURL}${endpoint}`,{
+                method: 'POST',
+                body: JSON.stringify({'emailid':emailid, 'password':password}),
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Error subscribing to the book:', data.error);
+                    // Handle the error
+                } else {
+                    console.log(data.token);
+                    // Show a suitable alert message
+                    alert('Subscription successful. We will notify you when the book is available for purchase/lending through your preferred mode of notification');
+                }
+            })
+            .catch(error => {
+                console.error('Error subscribing to the book:', error);
+                // Handle the error
+            });
+    }
+
+// function getRegiser() {
+//         // Make an API call to subscribe to the book
+//         const backendURL = 'http://localhost:3000';
+//         const endpoint = `/register`;
+//         fetch(`${backendURL}${endpoint}`,{
+//                 method: 'GET'
+//             })
+//             .then(response => response.json())
+//             .then(data => {
+//                 if (data.error) {
+//                     console.error('Error subscribing to the book:', data.error);
+//                     // Handle the error
+//                 } else {
+//                     // console.log(data.token);
+//                     // Show a suitable alert message
+//                     alert('Create User Here !!');
+//                 }
+//             })
+//             .catch(error => {
+//                 console.error('Error received', error);
+//                 // Handle the error
+//             });
+//     }
+
+function getRegister() {
+    const backendURL = 'http://localhost:3000';
+    const endpoint = '/register';
+
+    window.location.href = `${backendURL}${endpoint}`;
+    // fetch(`${backendURL}${endpoint}`, {
+    //     method: 'GET'
+    // })
+    // .then(response => {
+    //     if (!response.ok) {
+    //         throw new Error('Network response was not ok');
+    //     }
+    //     return response.json();
+    // })
+    // .then(data => {
+    //     // Handle the data received from the server
+    //     console.log('Success:', data);
+    //     alert('Create User Here !!');
+    // })
+    // .catch(error => {
+    //     console.error('Error received:', error);
+    //     // Handle the error
+    // });
+}
+
+
+
+    // document.getElementById('createAccountBtn').addEventListener('click', function() {
+    //     // window.location.href = '/createacc.html';
+    //     getRegiser();
+    // });
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginForm = document.getElementById('loginForm');
+        
+        loginForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            handleLogin();
+        });
+
+        const createUserButton = document.getElementById('CreateUser');
+        
+        createUserButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            getRegister();
+        });
+    });
+
+    // document.addEventListener('DOMContentLoaded', () => {
+    //     const createruser = document.getElementById('loginForm');
+        
+    //     loginForm.addEventListener('button', function(event) {
+    //         event.preventDefault();
+    //         getRegiser();
+    //     });
+    // });
+
+
+</script>
+</body>
+</html>
