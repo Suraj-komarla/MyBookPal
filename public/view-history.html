@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>View History</title>
+    <link rel="stylesheet" href="assets/style.css" type="text/css">
+</head>
+<body>
+    <header>
+        <h1>View Queries History</h1>
+    </header>
+    <div id="query_history"></div>
+
+    <script>
+        const backendURL = 'http://localhost:3000';
+
+        fetch(`${backendURL}/view_history`)
+            .then(response => response.json())
+            .then(data => {
+                const queriesContainer = document.getElementById('query_history');
+                if (data && data.length) {
+                    queriesContainer.innerHTML = '<ul>' + 
+                        data.map(query => 
+                            `<li>
+                                QUERY ID: ${query.query_id}<br> User ID: ${query.userid}<br> Question: ${query.question}<br> Answer: ${query.answer}<br> Status: ${query.status}
+                            </li>`
+                        ).join('') + 
+                        '</ul>';
+                } else {
+                    queriesContainer.innerHTML = '<p>No queries found.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                queriesContainer.innerHTML = '<p>Error loading queries.</p>';
+            });
+
+        
+    </script>
+</body>
+</html>

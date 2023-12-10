@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Service Portal</title>
+    <link rel="stylesheet" href="assets/style.css" type="text/css"> 
+</head>
+<body>
+    <header>
+        <h1>Welcome to the Customer Service Portal</h1>
+    </header>
+      <div class="image-grid">
+        <a href="submit-query.html">
+          <img src="assets/view_queries.jpg" alt="Image 1">
+          <p>Submit Queries</p>
+        </a>
+        <a href="view-notifications.html">
+          <img src="assets/view_customers.jpg" alt="Image 2">
+          <p>View notifications Details</p>
+        </a>
+        <a href="view-history.html">
+          <img src="assets/view_customers.jpg" alt="Image 2">
+          <p>View Query history</p>
+        </a>
+        </a>
+        </div>
+    
+    <div class="container">
+        <p>Welcome to the main dashboard. Use the navigation menu to access different sections of the portal.</p>
+        <!-- Additional content can be added here -->
+    </div>
+    <script>
+      // Example function to simulate retrieving or setting the user ID
+      function retrieveUserId() {
+          // Simulating retrieval of user ID, replace this with actual logic
+          return '2'; // Example User ID
+      }
+
+      // Set the User ID in Session Storage
+      const userId = retrieveUserId();
+      sessionStorage.setItem('userId', userId);
+  </script>
+</body>
+</html>

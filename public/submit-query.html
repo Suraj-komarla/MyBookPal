@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Submit Query</title>
+    <link rel="stylesheet" href="./assets/style.css" type="text/css"> <!-- Link to your CSS file -->
+</head>
+<body>
+    <header>
+        <h1>Submit Queries</h1>
+    </header>
+    <form id="queryForm">
+        <label for="question">Question:</label><br>
+        <textarea id="question" name="question" required></textarea><br>
+        <input type="submit" value="Submit">
+    </form>
+
+    <script>
+        document.getElementById('queryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const userId = sessionStorage.getItem('userId');
+            const question = document.getElementById('question').value;
+
+            const backendURL = 'http://localhost:3000';
+
+            fetch(`${backendURL}/queries`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `userId=${encodeURIComponent(userId)}&question=${encodeURIComponent(question)}`
+            })
+            .then(response => response.text())
+            .then(data => {
+                alert('Query submitted successfully!');
+                document.getElementById('queryForm').reset();
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Failed to submit query');
+            });
+        });
+    </script>
+</body>
+</html>

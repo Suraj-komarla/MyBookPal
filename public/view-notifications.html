@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>View Notifications</title>
+    <link rel="stylesheet" href="assets/style1.css" type="text/css">
+</head>
+<body>
+    <header>
+        <h1>View Query Notifications</h1>
+    </header>
+    <div id="notifications" style="padding: 20px;">
+        <!-- Notifications will be loaded here -->
+    </div>
+
+    <form id="deleteNotificationsForm" style="text-align: center;">
+        <input type="submit" value="Delete Selected Notifications">
+    </form>
+
+    <!-- Feedback Form Modal (Hidden initially) -->
+    <div id="feedbackModal" style="display:none;">
+        <form id="feedbackForm">
+            <label for="servRating">Service Rating (1-5):</label>
+            <input type="number" id="servRating" name="servRating" required min="1" max="5"><br>
+        
+            <label for="timeRating">Time Rating (1-5):</label>
+            <input type="number" id="timeRating" name="timeRating" required min="1" max="5"><br>
+        
+            <label>Solved:</label>
+            <div>
+                <input type="radio" id="solvedYes" name="solved" value="1">
+                <label for="solvedYes">Yes</label><br>
+        
+                <input type="radio" id="solvedNo" name="solved" value="0">
+                <label for="solvedNo">No</label>
+            </div>
+        
+            <label for="comment">Comment:</label>
+            <textarea id="comment" name="comment" required></textarea><br>
+        
+            <input type="hidden" id="queryId" name="queryId">
+            <input type="submit" value="Submit Feedback">
+        </form>
+        
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Function to open the feedback form
+            window.openFeedbackForm = function(event, queryId) {
+                event.preventDefault();
+                console.log("Open feedback form for query ID:", queryId);
+                document.getElementById('queryId').value = queryId;
+                document.getElementById('feedbackModal').style.display = 'block';
+            };
+
+            const backendURL = 'http://localhost:3000';
+            // Fetch and display notifications
+            fetch(`${backendURL}/notifications-CR`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Notifications received:", data);
+                    const notificationsContainer = document.getElementById('notifications');
+                    if (data && data.length) {
+                        const notificationsHtml = data.map(notification => 
+                            `<div class="notification-container">
+                                <div class="notification-content">
+                                    <input type="checkbox" name="notification" value="${notification.n_id}">
+                                    <br> Question: ${notification.question} <br> Answer: ${notification.answer} <br> Ticket Number: ${notification.query_id}<br>
+                                </div>
+                                <button type="button" class="feedback-button" onclick="openFeedbackForm(event, ${notification.query_id})">Provide Feedback</button>
+                            </div>`
+                        ).join('');
+                        notificationsContainer.innerHTML = notificationsHtml;
+                    } else {
+                        notificationsContainer.innerHTML = '<p>No notifications found.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    notificationsContainer.innerHTML = '<p>Error loading notifications.</p>';
+                });
+
+            // Handle feedback form submission
+            document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                let solvedValue;
+                    if (document.getElementById('solvedYes').checked) {
+                        solvedValue = 1;
+                    } else if (document.getElementById('solvedNo').checked) {
+                        solvedValue = 0;
+                    } else {
+                        solvedValue = null; // or some default value, or handle the error
+                    }
+                const formData = {
+                    query_ids: document.getElementById('queryId').value,
+                    userId: 2,  // Replace with actual user ID logic
+                    servRating: document.getElementById('servRating').value,
+                    timeRating: document.getElementById('timeRating').value,
+                    solved: solvedValue,
+                    comment: document.getElementById('comment').value
+                };
+                console.log(formData);
+
+                const backendURL = 'http://localhost:3000';
+                fetch(`${backendURL}/submit-feedback`, {
+                    method: 'POST',
+                    // headers: {
+                    //     'Content-Type': 'application/json',
+                    //     'Access-Control-Allow-Origin': '*',
+                    //     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
+                    // },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    document.getElementById('feedbackModal').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to submit feedback');
+                });
+            });
+        });
+        document.getElementById('deleteNotificationsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    // Get all checked checkboxes
+    const checkedBoxes = document.querySelectorAll('input[name="notification"]:checked');
+    const nIds = Array.from(checkedBoxes).map(box => box.value).join(',');
+    const backendURL = 'http://localhost:3000';
+    fetch(`${backendURL}/delete-notifications`, {
+        method: 'POST',
+        body: `n_id=${encodeURIComponent(nIds)}`
+    })
+    .then(response => response.text())
+    .then(data => {
+        alert(data);
+        window.location.reload();
+        // Optionally refresh or update the page or notifications list here
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to delete notifications');
+    });
+});
+
+    </script>
+</body>
+</html>

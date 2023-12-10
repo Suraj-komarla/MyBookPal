@@ -5,8 +5,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MyBookPal</title>
-    <link rel="stylesheet" href="listAllBooks.css" />
     <script src="listAllBooks.js"></script>
+    <link rel="stylesheet" href="listAllBooks.css" />
   </head>
   <body>
     <header>
@@ -22,32 +22,20 @@
           <li><a href="#comingsoon" class="comingsoon-icon">Coming Soon</a></li>
           <li><a href="#giftcards" class="giftcards-icon">Gift Cards</a></li>
           <li><a href="#membership" class="membership_icon">Memberships</a></li>
+          <li><a href="./public/index.html" class="membership_icon">Shash-TH</a></li>
         </ul>
       </nav>
       <ul class="user-menu">
+        <li class="home-button"><a href="listAllBooks.html" class="home-icon">Home</a></li>
         <li><a href="#account" class="account-icon">My Account</a></li>
         <li><a href="#wishlist" class="wishlist-icon">Wishlist</a></li>
         <li><a href="#cart" class="cart-icon">Cart</a></li>
       </ul>
     </header>
     <div class="search-bar">
-      <input type="text" placeholder="Search for books" />
-      <button type="submit">Search</button>
-      <div class="order-filter">
-        <label for="orderBy">Sort By:</label>
-        <select id="orderBy">
-          <option value="lowToHigh">Low to High</option>
-          <option value="highToLow">High to Low</option>
-        </select>
-
-        <label for="priceFilter">Price:</label>
-        <select id="priceFilter">
-          <option value="greaterThan50">Greater than 50</option>
-          <option value="lessThan50">Less than 50</option>
-          <option value="greaterThan10">Greater than 10</option>
-          <option value="lessThan10">Less than 10</option>
-        </select>
-      </div>
+      <input type="text" id="searchInput" placeholder="Search for books">
+      <button>Search</button>
+      
     </div>
     <div class="container">
       <form>
@@ -55,10 +43,6 @@
           <h2>Filter</h2>
           <div class="filter-category">
             <h3>Categories</h3>
-            <div class="filter-btn">
-              <input type="checkbox" name="all" />
-              <label for="all">Show All </label>
-            </div>
 
             <div class="filter-btn">
               <input type="checkbox" class="filter-btn" name="fiction" />
@@ -89,57 +73,220 @@
               <label for="mystery">Mystery </label>
             </div>
           </div>
+          <!-- <button type="button" id="apply-filter">Apply Filters</button> -->
+
           <div class="filter-condition">
-            <h3>Book-Condition</h3>
-            <div class="filter-btn">
-              <input type="checkbox" class="filter-btn" name="used" />
-              <label for="used">Used</label>
+            <h3>Price</h3>
+            <div class="price-btn">
+              <input type="checkbox" class="price-btn" name=">10" />
+              <label for=">10"> >$10 </label>
             </div>
 
-            <div class="filter-btn">
-              <input type="checkbox" class="filter-btn" name="new" />
-              <label for="new">New</label>
+            <div class="price-btn">
+              <input type="checkbox" class="price-btn" name="<10" />
+              <label for="<10"> <$10 </label>
             </div>
 
-            <div class="filter-btn">
-              <input type="checkbox" class="filter-btn" name="like-new" />
-              <label for="like-new">Like new</label>
+            <div class="price-btn">
+              <input type="checkbox" class="price-btn" name=">50" />
+              <label for=">50"> >$50 </label>
+            </div>
+
+            <div class="price-btn">
+              <input type="checkbox" class="price-btn" name="<50" />
+              <label for="<50"> <$50 </label>
             </div>
           </div>
+
+          <div class="filter-condition">
+            <h3>Sort By:</h3>
+            <div class="order-filter">
+              <select id="orderBy">
+                <option value=""> </option>
+                <option value="low-High">low-High</option>
+                <option value="High-low">High-low</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- <button type="button" id="apply-price-range">Apply Price Range</button> -->
+          <button type="button" id="apply-filter">Apply Filters</button>
         </div>
+        
       </form>
 
-      <div class="book-list">
-        <div class="book" data-category="fiction" onclick="redirectToAnotherPage(1)">
-          <!-- <img src="assets/book1.jpg" alt="Book 1" /> -->
-          <h3><a href="#book1">Book Title 1</a></h3>
-          <p>Author: Author 1</p>
-          <p>Category: Fiction</p>
-        </div>
-
-        <div class="book" data-category="nonfiction" onclick="redirectToAnotherPage(2)">
-          <!-- <img src="./assets/book2.jpg" alt="Book 2" /> -->
-          <h3><a href="#book2">Book Title 2</a></h3>
-          <p>Author: Author 2</p>
-          <p>Category: Nonfiction</p>
-        </div>
-
-        <div class="book" data-category="fiction" onclick="redirectToAnotherPage(3)">
-          <!-- <img src="./assets/book3.jpg" alt="Book 3" /> -->
-          <h3><a href="#book3">Book Title 3</a></h3>
-          <p>Author: Author 3</p>
-          <p>Category: Fiction</p>
-        </div>
+      <div class="book-list" id="book-list">
       </div>
     </div>
     <div id="bookdetails"></div>
 
-    <script>
-      function redirectToAnotherPage(bookId) {
-        redirectURL = `bookDisplay.html?id=${bookId}`
-        // alert("The book id is " + typeof bookId + " " + str);
-        window.location.href = redirectURL;
-      }
+    <script type="module">
+
+//       function redirectToAnotherPage(bookId) {
+//         console.log(bookId)
+//         redirectURL = `bookDisplay.html?id=${bookId}`
+//         window.location.href = redirectURL;
+//       }
+      
+//   function generateBookHTML(book) {
+//   return `
+//     <div class="book"  id="book${book.BookID}" data-category="${book.Genre}" onclick= "redirectToAnotherPage(${book.BookID})">
+//       <img src="./assets/${book.Photos}" alt="${book.Title}" />
+//       <h3>${book.Title}</h3>
+//       <p>Author: ${book.Author}</p>
+//       <p>Desciption: ${book.Book_description}</p>
+//       <p>Category: ${book.Genre}</p>
+//       <p>Price: ${book.Price}</p>
+//     </div>
+//   `;
+// }
+
+//   function fetchDataFromBackend() {
+//   const backendURL = 'http://localhost:3000';
+//   const bookListContainer = document.getElementById('book-list');
+//   bookListContainer.innerHTML = '';
+
+//   const keyword = document.getElementById('searchInput').value.trim();
+//   const filterCheckboxes = document.querySelectorAll('.filter-btn input:checked');
+//   const priceCheckboxes = document.querySelectorAll('.price-btn input:checked');
+
+//   const selectedFilters = Array.from(filterCheckboxes).map(checkbox => checkbox.name);
+//   const selectedPrice = Array.from(priceCheckboxes).map(checkbox => checkbox.name)[0]; // Only allow one price checkbox to be checked
+//   const sortBy = document.getElementById('orderBy').value;
+
+//   let endpoint = '/books';
+//   let filteredData; // Declare filteredData outside the fetch block
+
+//   if (keyword !== '') {
+//     endpoint = `/books/search?keyword=${encodeURIComponent(keyword)}`;
+
+//     fetch(`${backendURL}${endpoint}`, {
+//       method: 'GET',
+//     })
+//       .then(response => response.json())
+//       .then(data => {
+//         if (Array.isArray(data)) {
+//           // console.log("Condition",selectedFilters.length > 0 || selectedPrice || sortBy);
+//           // console.log("sortBy",sortBy);
+//           if (sortBy === 'low-High') {
+//             data.sort((a, b) => a.Price - b.Price);
+//           } else if (sortBy === 'High-low') {
+//             data.sort((a, b) => b.Price - a.Price);
+//           }
+
+//           if (selectedFilters.length > 0 || selectedPrice) {
+//             // Filter data based on selected filters and price constraints
+            
+//             filteredData = data.filter(book => {
+//               const authorFilter = selectedFilters.includes(book.Author.toLowerCase());
+//               const genreFilter = selectedFilters.includes(book.Genre.toLowerCase());
+//               // console.log(selectedFilters,book.Genre.toLowerCase())
+//               const bookConditionFilter = selectedFilters.includes(book.Book_condition.toLowerCase());
+//               const priceFilter =
+//                 !selectedPrice ||
+//                 (selectedPrice === ">10" && book.Price > 10) ||
+//                 (selectedPrice === "<10" && book.Price < 10) ||
+//                 (selectedPrice === ">50" && book.Price > 50) ||
+//                 (selectedPrice === "<50" && book.Price < 50);
+//                 // console.log(selectedPrice,book.Price)
+
+//                 // console.log('A',authorFilter);
+//                 // console.log('BC ',bookConditionFilter);
+//                 // console.log('G',genreFilter);
+//                 // console.log('P',priceFilter);
+                
+              
+//                 if(selectedFilters.length > 0 && selectedPrice){
+//                   // console.log('Both');
+//                   return (authorFilter || bookConditionFilter || genreFilter) && priceFilter;
+//                 }
+//                 else if(selectedFilters.length>0){
+//                   // console.log('Filters');
+//                   return (authorFilter || bookConditionFilter || genreFilter);
+//                 }
+//                 else if(selectedPrice){
+//                   // console.log('Price');
+//                   return priceFilter;
+//                 }
+              
+//             });
+//             // console.log('Filtering',filteredData)
+//             // console.log('Sort By',sortBy)
+          
+//           filteredData.forEach(book => {
+//             const bookHTML = generateBookHTML(book);
+//             bookListContainer.innerHTML += bookHTML;
+//             console.log(book);
+//           });
+//         }else{
+//           data.forEach(book => {
+//             const bookHTML = generateBookHTML(book);
+//             bookListContainer.innerHTML += bookHTML;
+//           });
+//         }
+
+//         }
+//       })
+//       .catch(error => console.error('Error fetching data from backend:', error));
+//   } else {
+//     endpoint = '/books';
+
+//     if (selectedFilters.length > 0) {
+//       const featuresParam = selectedFilters.join(',');
+//       endpoint = `/books/filter?features=${featuresParam}`;
+//     }
+
+//     if (selectedPrice) {
+//       if(selectedFilters.length > 0) {
+//       endpoint += `&price=${(selectedPrice)}`;
+//       }
+//       else{
+//         endpoint+= `/order?price=${selectedPrice}`;
+//       }
+//     }
+//     else{
+//       if(selectedFilters.length > 0) {
+//       endpoint += `&price=>0`;
+//       }
+//     }
+
+//     if(sortBy){
+//       if(selectedFilters.length>0|| selectedPrice) {
+//       endpoint += `,order=${sortBy}`;
+//       }
+//       else{
+//         endpoint += `/sort?order=${sortBy}`;
+//       }
+
+//     }
+//     console.log(`${backendURL}${endpoint}`);
+
+//     fetch(`${backendURL}${endpoint}`, {
+//       method: 'GET',
+//     })
+//       .then(response => response.json())
+//       .then(data => {
+//         if (Array.isArray(data)) {
+//           data.forEach(book => {
+//             const bookHTML = generateBookHTML(book);
+//             bookListContainer.innerHTML += bookHTML;
+//           });
+//         }
+//       })
+//       .catch(error => console.error('Error fetching data from backend:', error));
+//     }
+
+//   }
+
+//   document.addEventListener('DOMContentLoaded', () => {
+//     fetchDataFromBackend();
+//     const searchButton = document.querySelector('button');
+//     searchButton.addEventListener('click', fetchDataFromBackend);
+
+//     const applyFilterButton = document.getElementById('apply-filter');
+//     applyFilterButton.addEventListener('click', fetchDataFromBackend);
+
+//   });
     </script>
   </body>
 </html>

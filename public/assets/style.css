@@ -1,0 +1,245 @@
+body {
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    background-color: rgb(227, 227, 227);
+    margin: 0;
+    padding: 0;
+}
+header {
+    background-color: rgb(3, 108, 213);
+    color: white;
+    padding: 10px 0;
+    text-align: center;
+}
+
+/* Navigation Menu Styles */
+nav ul {
+    padding: 0;
+    list-style: none;
+    background-color: #333;
+    text-align: center;
+    margin: 0; /* Reset default margin */
+}
+nav ul li {
+    display: inline;
+}
+nav ul li a {
+    text-decoration: none;
+    color: white;
+    padding: 15px 20px;
+    display: inline-block;
+}
+nav ul li a:hover {
+    background-color: rgb(48, 141, 233);
+}
+
+/* Container Styles */
+.container {
+    padding: 20px;
+    text-align: center;
+}
+
+/* Button Styles */
+.buy-bid {
+    border: none;
+    border-radius: 5px;
+    padding: 15px 25px;
+    font-size: 19px;
+    color: #fff;
+    font-weight: bold;
+    background-color: rgb(3, 108, 213);
+    cursor: pointer;
+    box-shadow: inset 2px 2px 2px 0px rgba(255,255,255,.5),
+                7px 7px 20px 0px rgba(0,0,0,.1),
+                4px 4px 5px 0px rgba(0,0,0,.1);
+    margin: 10px; /* Added margin for spacing */
+}
+.buy-bid:hover {
+    background-color: rgb(48, 141, 233);
+}
+
+/* Additional Styles */
+.title {
+    font-family: GT Super Bold, serif;
+    font-size: 52px;
+    letter-spacing: 0.4px;
+    line-height: 1.2;
+    color: #333; /* Adjusted for better readability */
+}
+
+.text {
+    color: #333; /* Text color for better readability */
+}
+
+/* Condition Button Styles */
+.condition {
+    border-radius: 5px;
+    padding: 8px 18px;
+    font-size: 15px;
+    color: #fff;
+    text-decoration: none;
+    margin: 0px;
+    position: relative;
+    display: inline-block;
+    border: none;
+    box-shadow: 0px 2px 6px 0px #dcdcdc;
+}
+
+/* .container_nav {
+    display: flex;
+    width: 50%;
+    padding: 4% 2%;
+    box-sizing: border-box;
+    height: 50%;
+    margin-left: auto;
+  margin-right: auto;
+  }
+  
+  .box {
+    flex: 1;
+    overflow: hidden;
+    transition: .5s;
+    margin: 0 2%;
+    box-shadow: 0 20px 30px rgba(0,0,0,.1);
+    line-height: 0;
+  }
+  
+  .box > img {
+    width: 200%;
+    height: calc(100% - 10vh);
+    object-fit: cover ; 
+    transition: .5s;
+  }
+  
+  .box > span {
+    font-size: 3.8vh;
+    display: block;
+    text-align: center;
+    width: fit-content;
+    height: fit-content;
+    line-height: 2.6;
+  }
+  
+  .box:hover { flex: 1 1 50%; }
+  .box:hover > img {
+    width: 100%;
+    height: 100%;
+  } */
+  .image-grid {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    max-width: 90%;
+    margin: 100px auto;
+    padding: 20px;
+}
+
+.image-grid a {
+    width: 23%;
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.3s ease; /* Smooth transition for hover effect */
+}
+
+.image-grid img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 10px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for hover effect */
+}
+
+.image-grid p {
+    margin-top: 10px;
+}
+
+/* Hover effect */
+.image-grid a:hover {
+    transform: translateY(-5px); /* Slightly raise the box */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add shadow for 3D effect */
+}
+
+.image-grid a:hover img {
+    transform: scale(1.05); /* Slightly increase the image size */
+    border-radius: 10px; /* Maintain rounded corners */
+}
+
+#queries ul, #customer-details ul, #deleteNotificationsForm ul, #query_history ul, #notifications ul{
+    list-style-type: none;
+    padding: 0;
+}
+
+#queries li, #customer-details li,#deleteNotificationsForm li, #query_history li, #notifications li{
+    display: flex; /* Enables Flexbox */
+    align-items: center; /* Aligns items vertically in the center */
+    justify-content: space-between; /* Distributes space between content and button */
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 10px 50px 10px 30px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#queries li button, #customer-details li button,#feedbackForm button,#deleteNotificationsForm button, #deleteNotificationsForm li button, #notifications li button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 50px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#queries li button, #customer-details li button,#feedbackForm button, #deleteNotificationsForm li button, #notifications li button:hover {
+    background-color: #0056b3;
+}
+
+#notificationForm, #feedbackForm, #deleteNotificationsForm, #queryForm {
+    width: 80%;
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#notificationForm label,#feedbackForm  label, #deleteNotificationsForm label, #queryForm label {
+    font-weight: bold;
+}
+
+#notificationForm input[type="text"],
+#notificationForm textarea, #feedbackForm input[type="text"] , #feedbackForm textarea, #deleteNotificationsForm input[type="text"] , #deleteNotificationsForm textarea 
+, #queryForm input[type="text"] , #queryForm textarea {
+    width: 100%;
+    padding: 8px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+#queryForm input[type="submit"], #notificationForm input[type="submit"],#feedbackForm input[type="submit"],#deleteNotificationsForm input[type="submit"] {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#queryForm input[type="submit"],#notificationForm input[type="submit"],#feedbackForm input[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+ 
+.new { background-color: #f1c40f; }
+.like-new { background-color: #e67e22; }
+.good { background-color: #e65622; }
+.used { background-color: #a02b00; }
