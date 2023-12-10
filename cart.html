@@ -40,6 +40,7 @@
             </select>
         </div>
     </div>
+
     <div class="container">
         <table id="cart">
             <thead>
@@ -48,48 +49,44 @@
                     <th class="second">Quantity</th>
                     <th class="fourth">Total</th>
                     <th class="fifth">&nbsp;</th>
+                    <th class="sixth">&nbsp;</th>
                 </tr>
             </thead>
             <tbody id="cartDetails"></tbody>
-            <!-- tax + subtotal -->
-            <tr class="extracosts">
-                <td class="light">Shipping &amp; Tax</td>
-                <td colspan="2" class="light"></td>
-                <td>$35.00</td>
-                <td>&nbsp;</td>
-            </tr>
             <tr class="totalprice">
                 <td class="light">Total:</td>
                 <td colspan="2">&nbsp;</td>
                 <td colspan="2"><span class="thick">$225.45</span></td>
             </tr>
-
-            <tr class="checkoutrow">
-                <td colspan="5" class="checkout-container">
-                    <button id="submitbtn">Purchase Now!</button>
-                </td>
+            <tr class="walletamount">
+                <td class="light">Amount in Wallet:</td>
+                <td colspan="2">&nbsp;</td>
+                <td colspan="2"><span class="thick">$225.45</span></td>
             </tr>
-    
-            <!-- wallet btn -->
             <tr class="checkoutrow">
-                <td colspan="5" class="wallet-container">
+                <td colspan="5" class="checkout-wallet-container">
+                    <button id="submitbtn">Purchase Now!</button>
                     <button id="walletbtn">Go to Wallet</button>
                 </td>
             </tr>
-
-
         </table>
-
-        
-        
     </div>
+
     <script>
         const serverURL = 'http://localhost:3000';
-        const userId = 5;
-
+        const userId = 1;
         // Display cart details on page load
         document.addEventListener("DOMContentLoaded", function () {
             displayCartDetails(userId);
+            document.querySelector('#cartDetails').addEventListener('click', function(event) {
+            if (event.target.closest('.remove')) {
+                removeItem(event.target.closest('.remove'));
+            }
+            });
+            document.getElementById('submitbtn').addEventListener('click', function () {
+                // Call the purchaseNow function when the button is clicked
+                purchaseNow(userId);
+            });
         });
 
         // Function to fetch cart details
@@ -102,7 +99,7 @@
                 return await response.json();
             } catch (error) {
                 console.error('Error fetching cart details:', error.message);
-                throw error; // Propagate the error
+                throw error; 
             }
         }
 
@@ -116,49 +113,138 @@
                 return await response.json();
             } catch (error) {
                 console.error('Error fetching book details:', error.message);
-                throw error; // Propagate the error
+                throw error; 
             }
         }
 
         // Function to display cart details on the page
         async function displayCartDetails(userId) {
-            const cartDetails = await fetchCartDetails(userId);
-
-            if (cartDetails.length > 0) {
+            try {
+                const cartDetails = await fetchCartDetails(userId);
                 const tbody = document.getElementById('cartDetails');
-                const bookDetailsPromises = cartDetails.map(async item => {
-                    const bookDetails = await fetchBookDetails(item.BookID);
-                    // const totalPriceResponse = await fetch(`/compute_price?user_id=${userId}`);
-                    // const totalPriceData = await totalPriceResponse.json();
-                    // const totalCartPrice = totalPriceData.total_price;
+                const totalRow = document.querySelector('.totalprice');
+                const walletRow = document.querySelector('.walletamount');
 
-// Update the total price element in the HTML
-document.querySelector('.totalprice td span.thick').innerText = `$${totalCartPrice}`;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${bookDetails[0].Title}</td>
-                        <td>${item.Quantity}</td>
-                        <td>${totalPrice.toFixed(2)}</td>
-                        <td><span class="remove" onclick="removeItem(this)"><img
-                                    src="https://i.imgur.com/h1ldGRr.png" alt="X"></span></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-
-                await Promise.all(bookDetailsPromises);
-            } else {
-                // No items in the cart
-                document.getElementById('cartDetails').innerHTML = 'No items in the cart.';
+                tbody.innerHTML = '';
+                if (cartDetails.length > 0) {
+                    let finalCartValue = 0;
+                    for (const item of cartDetails) {
+                        const bookDetails = await fetchBookDetails(item.BookID);
+                        const totalPrice = item.Quantity * bookDetails[0].Price;
+                        finalCartValue += totalPrice;
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${bookDetails[0].Title}</td>
+                            <td><input type="number" value="${item.Quantity}" min="0" max="99" class="qtyinput" onchange="updateQuantity(this)"></td>
+                            <td>${totalPrice.toFixed(2)}</td>
+                            <td><span class="remove" data-book-id="${bookDetails[0].BookID}" onclick="removeItem(this)"><img src="https://i.imgur.com/h1ldGRr.png" alt="Remove"></span></td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                    totalRow.classList.remove('hidden');
+                    walletRow.classList.remove('hidden');
+                    document.querySelector('.totalprice td span.thick').innerText = `$${finalCartValue.toFixed(2)}`;
+                    const walletResponse = await fetch(`${serverURL}/wallet_balance?id=${userId}`);
+                    const walletData = await walletResponse.json();
+                    const walletAmount = parseFloat(walletData.balance);
+                    document.querySelector('.walletamount td span.thick').innerText = `$${walletAmount.toFixed(2)}`;
+                } else {
+                    totalRow.classList.add('hidden');
+                    walletRow.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error fetching cart details:', error);
             }
         }
 
-        // Function to remove an item from the cart
-        function removeItem(element) {
-            // Implement the logic to remove the corresponding item from the cart
-            const row = element.closest('tr');
-            row.parentNode.removeChild(row);
+        function getBookIdFromRow(row) {
+            const bookId = row.querySelector('.remove').getAttribute('data-book-id');
+            console.log('This is the bookid', bookId);
+            return bookId;  
         }
+
+        // Function to remove an item from the cart
+        async function removeItem(element) {
+            const row = element.closest('tr');
+            const bookId = getBookIdFromRow(row);
+            try {
+                const response = await fetch(`${serverURL}/delete_item_from_cart?userId=${userId}&bookId=${bookId}`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                row.parentNode.removeChild(row);
+                updateTotalPrice(userId);
+            } catch (error) {
+                console.error('Error removing item from cart:', error);
+            }
+        }
+
+        async function updateTotalPrice(userId) {
+        try {
+            const cartDetails = await fetchCartDetails(userId);
+            let finalCartValue = 0;
+
+            for (const item of cartDetails) {
+                const bookDetails = await fetchBookDetails(item.BookID);
+                finalCartValue += item.Quantity * bookDetails[0].Price;
+            }
+
+            document.querySelector('.totalprice td span.thick').innerText = `$${finalCartValue.toFixed(2)}`;
+        } catch (error) {
+            console.error('Error updating total price:', error);
+        }
+    }
+
+        
+    async function purchaseNow(userId) {
+            try {
+                // Fetch the cart details to include in the purchase request
+                const cartDetails = await fetchCartDetails(userId);
+
+                // Check if the cart is not empty
+                if (cartDetails.length === 0) {
+                    alert('Cart is empty. Add items to the cart before purchasing.');
+                    return;
+                }
+
+                // Prepare the purchase request body
+                const requestBody = JSON.stringify(cartDetails.map(item => ({
+                    UserID: userId,
+                    BookID: item.BookID,
+                    Quantity: item.Quantity
+                })));
+
+                // Make a request to the backend to initiate the purchase
+                const response = await fetch(`${serverURL}/purchase_product`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: requestBody,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                // If the purchase is successful, update the UI or perform any necessary actions
+                console.log('Purchase successful!');
+                alert('Purchase successful!');
+                
+                // Optionally, you can clear the cart and update the displayed cart details
+                displayCartDetails(userId);
+            } catch (error) {
+                // If there's an error during the purchase, display a popup with the error message
+                console.error('Error during purchase:', error);
+                alert('Error during purchase: ' + error.message);
+            }
+        }
+
+    
     </script>
 </body>
-
 </html>

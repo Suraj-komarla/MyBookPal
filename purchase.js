@@ -413,9 +413,10 @@ function viewPurchaseHistory(connection, req, res) {
       res.end('Invalid User ID');
       return;
     }
-
-    const selectQuery = 'SELECT * from PurchaseHistory where UserID = ?';
-
+    const selectQuery = `
+    SELECT BL.Title,P.Quantity, P.Amount, P.PaymentDateTime from PurchaseHistory P JOIN BookListing BL ON P.BookID = BL.BookID
+    WHERE P.UserID = ?
+  `;
     new Promise((resolve, reject) => {
       connection.query(selectQuery, [userId], (err, results) => {
         if (err) {

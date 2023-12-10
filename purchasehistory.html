@@ -40,11 +40,73 @@
             </select>
         </div>
     </div>
-    
-    
-    <script>
-        
-    </script>
+
+    <div class="container">
+        <table id="cart">
+            <thead>
+                <tr>
+                    <th class="third">Book</th>
+                    <th class="second">Quantity</th>
+                    <th class="fourth">Amount</th>
+                    <th class="fifth">Date of Purchase</th>
+                    <th class="sixth">&nbsp;</th>
+                </tr>
+            </thead>
+            <tbody id="purchasehistory"></tbody>
+        </table>
+    </div>
+
+<script>
+    const serverURL = 'http://localhost:3000';
+     const userId = 3;
+    document.addEventListener("DOMContentLoaded", function () {
+        // Call the function to fetch and display purchase history
+        displayPurchaseHistory(userId);
+    });
+
+    // Function to fetch and display purchase history
+    async function displayPurchaseHistory(userId) {
+        try {
+            // Fetch purchase history from the backend
+            const response = await fetch(`${serverURL}/purchase_history?id=${userId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const purchaseHistory = await response.json();
+            const tbody = document.getElementById('purchasehistory');
+
+            // Clear existing content
+            tbody.innerHTML = '';
+
+            if (purchaseHistory.length > 0) {
+                // Iterate through the purchase history and create rows
+                for (const record of purchaseHistory) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${record.Title}</td>
+                        <td>${record.Quantity}</td>
+                        <td>${record.Amount}</td>
+                        <td>${record.PaymentDateTime}</td>
+                        <td>&nbsp;</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            } else {
+                // Display a message if there is no purchase history
+                const tr = document.createElement('tr');
+                tr.innerHTML = '<td colspan="5">No purchase history available</td>';
+                tbody.appendChild(tr);
+            }
+        } catch (error) {
+            console.error('Error fetching purchase history:', error);
+        }
+    }
+</script>
+
+
+
+
 </body>
 
 </html>
