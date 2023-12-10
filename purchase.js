@@ -465,7 +465,6 @@ function updateWalletBalance(connection, userId, amount) {
   });
 }
 
-
 function createCheckoutSession(userId, amount) {
   return new Promise((resolve, reject) => {
     stripe.checkout.sessions.create({

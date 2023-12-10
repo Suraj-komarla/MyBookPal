@@ -5,6 +5,7 @@ const fs = require('fs'); // Add this line
 const path = require('path'); // Add this line
 const cron = require('node-cron');
 
+
 const { listAvailableBooks, borrowBooks, returnBooks, borrowedBooks } = require('./bookLending.js');
 const { checkReservedBooks, newSubscription, cancelSubscription, getSubscriptions, 
   getNotificationPreferences, updateNotificationPreferences } = require('./notificationRequests.js');
@@ -48,10 +49,29 @@ cron.schedule('*/1 * * * *', () => {
 //   checkAndNotifyExpiredAuctions(connection);
 // }, 60 * 1000);
 
+function serveStaticFiles(req, res, filePath) {
+  const fileExtension = path.extname(filePath);
+  const contentType = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+  }[fileExtension] || 'text/plain';
+
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Internal Server Error');
+    } else {
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(data);
+    }
+  });
+}
+
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   // Respond to OPTIONS requests
   if (req.method === 'OPTIONS') {
     res.statusCode = 200;
@@ -73,7 +93,12 @@ const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  if (req.method === 'GET' && reqUrl.pathname.startsWith('/books/availableLending')) {
+  if (req.method === 'GET' && (path.match('\.html$'))) {
+    const filePath = '/Users/gayathri/Documents/MyBookPal/success.html';
+    serveStaticFiles(req, res, filePath);
+}
+
+  else if (req.method === 'GET' && reqUrl.pathname.startsWith('/books/availableLending')) {
     listAvailableBooks(connection, req, res)
   } else if (reqUrl.pathname.startsWith("/displaybook") && req.method === "GET") {
     showBookDetails(req,res,params, connection);

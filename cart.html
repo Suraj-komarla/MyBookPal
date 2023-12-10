@@ -74,7 +74,7 @@
 
     <script>
         const serverURL = 'http://localhost:3000';
-        const userId = 3;
+        const userId = 5;
         // Display cart details on page load
         document.addEventListener("DOMContentLoaded", function () {
             displayCartDetails(userId);
@@ -202,17 +202,20 @@
     try {
         // Fetch the cart details to include in the purchase request
         const cartDetails = await fetchCartDetails(userId);
+
         // Check if the cart is not empty
         if (cartDetails.length === 0) {
             alert('Cart is empty. Add items to the cart before purchasing.');
             return;
         }
+
         // Prepare the purchase request body
         const requestBody = JSON.stringify(cartDetails.map(item => ({
             UserID: userId,
             BookID: item.BookID,
             Quantity: item.Quantity
         })));
+
         // Make a request to the backend to initiate the purchase
         const response = await fetch(`${serverURL}/purchase_product`, {
             method: 'POST',
@@ -222,7 +225,16 @@
             body: requestBody,
         });
 
-        if (!response.ok) {
+        // Check if the response status is in the success range (200-299)
+        if (response.status >= 200 && response.status < 300) {
+            // If the purchase is successful, update the UI or perform any necessary actions
+            console.log('Purchase successful!');
+            // Optionally, you can clear the cart and update the displayed cart details
+            displayCartDetails(userId);
+
+            // Redirect to the purchase history page
+            window.location.href = 'purchasehistory.html';
+        } else {
             // Handle specific error messages from the backend
             const responseData = await response.json();
             if (responseData.error) {
@@ -232,18 +244,23 @@
                 // For unexpected errors, display a generic error message
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
-        } else {
-            // If the purchase is successful, update the UI or perform any necessary actions
-            console.log('Purchase successful!');
-            // Optionally, you can clear the cart and update the displayed cart details
-            displayCartDetails(userId);
         }
     } catch (error) {
-        // If there's an unexpected error during the purchase, display a generic error message
+        // Log the detailed error information to the console
         console.error('Error during purchase:', error);
-        alert('Error during purchase: Something went wrong. Please try again.');
+
+        // Display a more specific error message based on the type of error
+        if (error instanceof TypeError) {
+            alert('Error during purchase: There was a type error. Please check your code.');
+        } else if (error instanceof SyntaxError) {
+            alert('Error during purchase: There was a syntax error in your code.');
+        } else {
+            // For unexpected errors, display a generic error message
+            alert('Error during purchase: Something went wrong. Please try again.');
+        }
     }
 }
+
 
 
 
