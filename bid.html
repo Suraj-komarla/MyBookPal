@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MyBookPal</title>
+    <link rel="stylesheet" href="listAllBooks.css" />
+    <link rel="stylesheet" href="productStyle.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+  </head>
+  <body>
+    <header>
+        <div class="brand">MyBookPal</div>
+      <nav>
+        <ul class="nav-menu">
+          <li><a href="./listAllBooks.html" class="books-icon">Books</a></li>
+          <!-- <li><a href="#ebooks" class="ebooks-icon"></a></li>
+          <li><a href="#audiobooks" class="audiobooks-icon">Audiobooks</a></li>
+          <li><a href="#bestsellers" class="bestsellers-icon">Bestsellers</a></li>
+          <li><a href="#comingsoon" class="comingsoon-icon">Coming Soon</a></li> -->
+          <li class="dropdown">
+            <a href="#" class="bookLending-icon">BookLending</a>
+            <div class="dropdown-content">
+                <a href="#listAllLendingBooks.html" id="borrowBookOption">Borrow a book</a>
+                <a href="#returnBook.html" id="returnBookOption">Return a book</a>
+                <a href="#MyBorrowedBooks.html" id="myBorrowedBooksOption">My borrowed books</a>
+            </div>
+        </li>
+        <li><a href="./listAllBooks.html" class="books-icon">Selling Books</a></li>
+        <li class="dropdown">
+          <a href="#" class="bookLending-icon">Subscriptions</a>
+          <div class="dropdown-content">
+              <a href="#subscribeBook.html" id="borrowBookOption">Subscribe to a book</a>
+              <a href="#unsubscribeBook.html" id="returnBookOption">Unsubscribe</a>
+          </div>
+        </li>
+        <li><a href="#Wallet" class="Wallet_icon">Wallet</a></li>
+        <li><a href="#cart" class="cart-icon"><i class="fa fa-opencart" style="padding:3px;"></i>Cart</a></li>
+        <li><a href="./public/index.html">Contact Us</a></li>
+        </ul>
+      </nav>
+        <ul class="user-menu">
+          <!-- <li class="home-button"><a href="listAllBooks.html" class="home-icon">Home</a></li> -->
+          
+          <li class="dropdown">
+            <a href="#account" class="account-icon"><i class="fa fa-user" style="padding:3px;"></i>My Account</a>
+            <div class="dropdown-content">
+                <a href="#listAllLendingBooks.html" id="borrowBookOption">Update Account</a>
+                <a href="#listAllLendingBooks.html" id="borrowBookOption">Settings</a>
+                <a href="./public/index.html" id="borrowBookOption">Contact Us</a>
+                <a href="#listAllLendingBooks.html" id="borrowBookOption">Logout</a>
+                <a href="#listAllLendingBooks.html" id="borrowBookOption">Sign In</a
+            </div>
+          </li>
+          
+          
+      </ul>
+    </header>
+    <div class="search-bar">
+      <input type="text" placeholder="Search for books" />
+      <button type="submit">Search</button>
+      <div class="order-filter">
+        <label for="orderBy">Sort By:</label>
+        <select id="orderBy">
+          <option value="lowToHigh">Low to High</option>
+          <option value="highToLow">High to Low</option>
+        </select>
+
+        <label for="priceFilter">Price:</label>
+        <select id="priceFilter">
+          <option value="greaterThan50">Greater than 50</option>
+          <option value="lessThan50">Less than 50</option>
+          <option value="greaterThan10">Greater than 10</option>
+          <option value="lessThan10">Less than 10</option>
+        </select>
+      </div>
+    </div>
+    </header>
+    <h2>Place Bid Form</h2>
+
+  <form id="bidForm" action="/submit_bid" method="post">
+    <label for="placeBid">Place Bid:</label>
+    <input type="number" id="placeBid" name="priceList" required>
+    <br>
+
+    <label for="maxLimit">Max Limit:</label>
+    <input type="number" id="maxLimit" name="maxLimit" required>
+    <br>
+
+    <label for="autoBid">Auto Bid:</label>
+    <select id="autoBid" name="autoBid" required>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+    <br>
+    <input type="hidden" name="book_id" value=1>
+    <input type="hidden" name="user_id" value=3>
+    <button type="submit">Submit Bid</button>
+  </form>
+
+  <script>
+    document.getElementById('bidForm').addEventListener('submit', function(event) {
+      event.preventDefault(); // Prevent the default form submission
+
+      // Get form data
+      const formData = new FormData(event.target);
+
+      // Send form data to the server using fetch
+      fetch('/book/placeBid', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(result => {
+        console.log(result);
+        // Redirect to a blank page after receiving the result
+        window.location.href = '/blank_page.html'; // Replace with the desired blank page
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+    });
+  </script>
+
+  </body>
+</html>
