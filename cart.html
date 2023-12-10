@@ -192,7 +192,6 @@
                 const bookDetails = await fetchBookDetails(item.BookID);
                 finalCartValue += item.Quantity * bookDetails[0].Price;
             }
-
             document.querySelector('.totalprice td span.thick').innerText = `$${finalCartValue.toFixed(2)}`;
         } catch (error) {
             console.error('Error updating total price:', error);

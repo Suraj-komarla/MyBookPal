@@ -109,7 +109,7 @@ header {
     border-collapse: collapse;
     margin-top: 20px;
     padding: 20px 0;
-    table-layout: fixed; /* Ensures the table width is determined by the width of columns */
+    table-layout: fixed; 
 }
 #cart tr {
     text-align: middle; 
@@ -159,13 +159,27 @@ header {
     border: none;
     cursor: pointer;
     margin: 60px;
+    width: 150px;
 }
 
 .checkout-wallet-container button:hover {
     background-color: #003366;
 }
 
-/* Add this to your existing CSS file or create a new one */
 .hidden {
     display: none;
+}
+
+#submitAmountBtn {
+    background-color: #004d99;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+    margin: 20px 180px 160px 350px; 
+    width: 150px;
+}
+
+#submitAmountBtn:hover {
+    background-color: #003366;
 }

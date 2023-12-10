@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MyBookPal</title>
+    <link rel="stylesheet" href="cart.css" />
+</head>
+
+<body>
+    <header>
+        <div class="brand">MyBookPal</div>
+        <nav>
+            <ul class="nav-menu">
+                <li><a href="#books" class="books-icon">Books</a></li>
+                <li><a href="#ebooks" class="ebooks-icon">eBooks</a></li>
+                <li><a href="#audiobooks" class="audiobooks-icon">Audiobooks</a></li>
+                <li><a href="#bestsellers" class="bestsellers-icon">Bestsellers</a></li>
+                <li><a href="#comingsoon" class="comingsoon-icon">Coming Soon</a></li>
+                <li><a href="#giftcards" class="giftcards-icon">Gift Cards</a></li>
+                <li><a href="#membership" class="membership_icon">Memberships</a></li>
+            </ul>
+        </nav>
+        <ul class="user-menu">
+            <li><a href="#account" class="account-icon">My Account</a></li>
+            <li><a href="#wishlist" class="wishlist-icon">Wallet</a></li>
+            <li><a href="#cart" class="cart-icon">Cart</a></li>
+        </ul>
+    </header>
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search for books">
+        <button>Search</button>
+        <div class="order-filter">
+            <label for="orderBy">Sort By:</label>
+            <select id="orderBy">
+                <option value="lowToHigh">Low to High</option>
+                <option value="highToLow">High to Low</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="container">
+        <table id="cart">
+            <tbody id="purchasehistory">
+                <tr class="walletamount">
+                    <td class="light">Amount in Wallet:</td>
+                    <td colspan="2"><span class="thick" id="walletAmount">$225.45</span></td>
+                </tr>
+                <tr class="walletamount">
+                    <td class="light">Amount to be added:</td>
+                    <td colspan="2">
+                        <input type="text" id="amountToAdd" placeholder="Enter amount">
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                        <button id="submitAmountBtn" onclick="submitAmount()">Add Amount</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const serverURL = 'http://localhost:3000';
+        const userId = 1;
+    
+        document.addEventListener("DOMContentLoaded", function () {
+            setWalletAmount(userId);
+        });
+    
+        async function setWalletAmount(userId) {
+            try {
+                // Fetch wallet balance from the backend
+                const walletResponse = await fetch(`${serverURL}/wallet_balance?id=${userId}`);
+                if (!walletResponse.ok) {
+                    throw new Error(`HTTP error! Status: ${walletResponse.status}`);
+                }
+    
+                const walletData = await walletResponse.json();
+                const walletAmount = parseFloat(walletData.balance);
+    
+                // Update the wallet amount in the HTML
+                document.querySelector('.walletamount td span.thick').innerText = `$${walletAmount.toFixed(2)}`;
+            } catch (error) {
+                console.error('Error fetching wallet balance:', error);
+            }
+        }
+    
+        async function submitAmount() {
+            const amountToAdd = document.getElementById('amountToAdd').value;
+    
+            try {
+                // Validate amount
+                if (!amountToAdd || isNaN(parseFloat(amountToAdd))) {
+                    alert('Please enter a valid amount.');
+                    return;
+                }
+    
+                // Prepare the request body
+                const requestBody = JSON.stringify({
+                    user_id: userId,
+                    amount: parseFloat(amountToAdd).toFixed(2),
+                });
+    
+                // Make a request to the backend to add balance to the wallet
+                const response = await fetch(`${serverURL}/add_wallet_amount`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: requestBody,
+                });
+
+    
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+    
+                // Parse the response JSON
+                const responseData = await response.json();
+    
+                // Redirect the webpage to the checkout URL
+                window.location.href = responseData.checkout_url;
+            } catch (error) {
+                console.error('Error adding balance to wallet:', error);
+                alert(`Error adding balance to wallet. Please try again.\n${error.message}`);
+            }
+        }
+    </script>
+    
+</body>
+
+</html>
