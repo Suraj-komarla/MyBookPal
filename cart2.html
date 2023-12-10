@@ -40,6 +40,7 @@
             </select>
         </div>
     </div>
+    
     <div class="container">
         <table id="cart">
             <thead>
@@ -48,9 +49,11 @@
                     <th class="second">Quantity</th>
                     <th class="fourth">Total</th>
                     <th class="fifth">&nbsp;</th>
+                    <th class="sixth">&nbsp;</th>
                 </tr>
             </thead>
-            <tbody id="cartDetails"></tbody>
+            <tbody id="cartDetails">
+            </tbody>
             <tr class="totalprice">
                 <td class="light">Total:</td>
                 <td colspan="2">&nbsp;</td>
@@ -69,12 +72,22 @@
             </tr>
         </table>
     </div>
+
     <script>
         const serverURL = 'http://localhost:3000';
-        const userId = 3;
+        const userId = 5;
         // Display cart details on page load
         document.addEventListener("DOMContentLoaded", function () {
             displayCartDetails(userId);
+            document.querySelector('#cartDetails').addEventListener('click', function(event) {
+            if (event.target.closest('.remove')) {
+                removeItem(event.target.closest('.remove'));
+            }
+            });
+            document.getElementById('submitbtn').addEventListener('click', function () {
+                // Call the purchaseNow function when the button is clicked
+                purchaseNow(userId);
+            });
         });
 
         // Function to fetch cart details
@@ -105,11 +118,13 @@
             }
         }
 
-        // Function to display cart details on the page
+       // Function to display cart details on the page
         async function displayCartDetails(userId) {
             try {
                 const cartDetails = await fetchCartDetails(userId);
                 const tbody = document.getElementById('cartDetails');
+                const messageRow = document.querySelector('.totalprice'); // Select the totalprice row
+
                 tbody.innerHTML = ''; // Clear the existing content before adding new items
                 if (cartDetails.length > 0) {
                     let finalCartValue = 0;
@@ -135,21 +150,107 @@
                     document.querySelector('.walletamount td span.thick').innerText = `$${walletAmount.toFixed(2)}`;
                 } else {
                     // No items in the cart
+                    messageRow.classList.remove('hidden'); // Show the message when there are no items in the cart
                     document.querySelector('.totalprice td span.thick').innerText = '$0.00';
                     document.querySelector('.walletamount td span.thick').innerText = '$0.00';
-                    document.getElementById('cartDetails').innerHTML = 'No items in the cart.';
+                    tbody.innerHTML = '<tr><td colspan="5">There are no items in the cart.</td></tr>';
                 }
             } catch (error) {
                 console.error('Error fetching cart details:', error);
             }
         }
 
-        // Function to remove an item from the cart
-        function removeItem(element) {
-            // Implement the logic to remove the corresponding item from the cart
-            const row = element.closest('tr');
-            row.parentNode.removeChild(row);
+        function getBookIdFromRow(row) {
+            const bookId = row.querySelector('.remove').getAttribute('data-book-id');
+            console.log('This is the bookid', bookId);
+            return bookId;  
         }
+
+        // Function to remove an item from the cart
+        async function removeItem(element) {
+            console.log('removeItem function called');
+            const row = element.closest('tr');
+            const userId = 3; 
+            const bookId = getBookIdFromRow(row); // Define a function to get the book ID from the row
+            try {
+                // Call the backend to delete the item from the cart
+                const response = await fetch(`${serverURL}/delete_item_from_cart?userId=${userId}&bookId=${bookId}`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                // If the item is successfully deleted, update the UI
+                row.parentNode.removeChild(row);
+                updateTotalPrice(userId); // Update the total price after removing the item
+            } catch (error) {
+                console.error('Error removing item from cart:', error);
+            }
+     }
+
+        async function updateTotalPrice(userId) {
+        try {
+            const cartDetails = await fetchCartDetails(userId);
+            let finalCartValue = 0;
+
+            for (const item of cartDetails) {
+                const bookDetails = await fetchBookDetails(item.BookID);
+                finalCartValue += item.Quantity * bookDetails[0].Price;
+            }
+
+            document.querySelector('.totalprice td span.thick').innerText = `$${finalCartValue.toFixed(2)}`;
+        } catch (error) {
+            console.error('Error updating total price:', error);
+        }
+    }
+
+        
+        async function purchaseNow(userId) {
+            try {
+                // Fetch the cart details to include in the purchase request
+                const cartDetails = await fetchCartDetails(userId);
+
+                // Check if the cart is not empty
+                if (cartDetails.length === 0) {
+                    alert('Cart is empty. Add items to the cart before purchasing.');
+                    return;
+                }
+
+                // Prepare the purchase request body
+                const requestBody = JSON.stringify(cartDetails.map(item => ({
+                    UserID: userId,
+                    BookID: item.BookID,
+                    Quantity: item.Quantity
+                })));
+
+                // Make a request to the backend to initiate the purchase
+                const response = await fetch(`${serverURL}/purchase_product`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: requestBody,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                // If the purchase is successful, update the UI or perform any necessary actions
+                console.log('Purchase successful!');
+                alert('Purchase successful!');
+                
+                // Optionally, you can clear the cart and update the displayed cart details
+                displayCartDetails(userId);
+            } catch (error) {
+                // If there's an error during the purchase, display a popup with the error message
+                console.error('Error during purchase:', error);
+                alert('Error during purchase: ' + error.message);
+            }
+        }
+
     </script>
 </body>
 

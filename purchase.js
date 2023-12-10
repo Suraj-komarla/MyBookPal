@@ -771,6 +771,61 @@ function deleteFromCart(connection, req, res) {
   });
 }
 
+function deleteItemFromCart(connection, req, res) {
+  const queryParameters = new URLSearchParams(req.url.split('?')[1]);
+  const userId = queryParameters.get('userId');
+  const bookId = queryParameters.get('bookId');
+
+  // Validate userId and bookId
+  if (!userId || isNaN(userId) || !bookId || isNaN(bookId)) {
+    res.statusCode = 400; // Bad Request
+    res.end('Invalid User ID or Book ID');
+    return;
+  }
+
+  const deleteQuery = `
+    DELETE FROM Cart
+    WHERE UserID = ? AND BookID = ?
+  `;
+
+  new Promise((resolve, reject) => {
+    connection.query(deleteQuery, [userId, bookId], (error, result) => {
+      if (error) {
+        console.error('Error deleting the item from the cart:', error);
+        reject(error);
+        return;
+      }
+
+      if (result.affectedRows === 0) {
+        // No records found to delete
+        resolve({ message: 'No such item found in the cart for the user.' });
+      } else {
+        // Item deleted successfully
+        console.log(`Deleted item with BookID ${bookId} from the cart for user ${userId}`);
+        resolve(result);
+      }
+    });
+  })
+  .then((result) => {
+    if (result.message) {
+      // No records found case
+      res.statusCode = 404;
+      res.writeHead(res.statusCode, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: result.message }));
+    } else {
+      // Item deleted successfully
+      res.statusCode = 200;
+      res.writeHead(res.statusCode, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ message: 'Item deleted successfully' }));
+    }
+  })
+  .catch((error) => {
+    res.statusCode = 500;
+    res.writeHead(res.statusCode, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Internal Server Error' }));
+  });
+}
+
 //Function for a user to place bid
 function placeBid(connection, req, res) {
   let requestBody = '';
@@ -898,7 +953,7 @@ function getbookdetails(connection, req, res) {
     return;
   }
   const selectQuery = `
-    SELECT Title, Price FROM booklisting WHERE BookID = ?
+    SELECT BookID, Title, Price FROM booklisting WHERE BookID = ?
   `;
   new Promise((resolve, reject) => {
     connection.query(selectQuery, [bookid], (err, results) => {
@@ -973,5 +1028,6 @@ module.exports = {
     purchaseProduct,
     placeBid,
     getbookdetails,
-    fetchWalletBalance
+    fetchWalletBalance,
+    deleteItemFromCart
 }

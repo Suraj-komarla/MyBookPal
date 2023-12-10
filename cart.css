@@ -164,3 +164,8 @@ header {
 .checkout-wallet-container button:hover {
     background-color: #003366;
 }
+
+/* Add this to your existing CSS file or create a new one */
+.hidden {
+    display: none;
+}
