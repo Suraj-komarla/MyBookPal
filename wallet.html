@@ -65,10 +65,17 @@
 
     <script>
         const serverURL = 'http://localhost:3000';
-        const userId = 4;
-    
+        // const userId = 4;
         document.addEventListener("DOMContentLoaded", function () {
-            setWalletAmount(userId);
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get("id");
+    
+            if (userId) {
+                setWalletAmount(userId);
+            } else {
+                // Handle the case where userId is not found in the URL parameters
+                console.error('User ID not found in URL parameters');
+            }
         });
     
         async function setWalletAmount(userId) {

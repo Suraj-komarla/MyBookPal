@@ -58,10 +58,18 @@
 
 <script>
     const serverURL = 'http://localhost:3000';
-     const userId = 3;
-    document.addEventListener("DOMContentLoaded", function () {
+    //  const userId = 3;
+     document.addEventListener("DOMContentLoaded", function () {
         // Call the function to fetch and display purchase history
-        displayPurchaseHistory(userId);
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get("id");
+    
+        if (userId) {
+            displayPurchaseHistory(userId);
+        } else {
+            // Handle the case where userId is not found in the URL parameters
+            console.error('User ID not found in URL parameters');
+        }
     });
 
     // Function to fetch and display purchase history

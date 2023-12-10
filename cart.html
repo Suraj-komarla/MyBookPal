@@ -74,9 +74,10 @@
 
     <script>
         const serverURL = 'http://localhost:3000';
-        const userId = 5;
+        const userId = 2;
         // Display cart details on page load
         document.addEventListener("DOMContentLoaded", function () {
+            //write the redirection code here -> whenever cart is clicked, we should get the userid here
             displayCartDetails(userId);
             document.querySelector('#cartDetails').addEventListener('click', function(event) {
             if (event.target.closest('.remove')) {
@@ -84,9 +85,11 @@
             }
             });
             document.getElementById('submitbtn').addEventListener('click', function () {
-                // Call the purchaseNow function when the button is clicked
                 purchaseNow(userId);
             });
+            document.getElementById('walletbtn').addEventListener('click', function () {
+                redirectTowalletPage(userId);
+            })
         });
 
         // Function to fetch cart details
@@ -231,9 +234,8 @@
             console.log('Purchase successful!');
             // Optionally, you can clear the cart and update the displayed cart details
             displayCartDetails(userId);
-
-            // Redirect to the purchase history page
-            window.location.href = 'purchasehistory.html';
+            // Redirect to the purchase history page with the user ID
+            redirectToPurchaseHistory(userId);
         } else {
             // Handle specific error messages from the backend
             const responseData = await response.json();
@@ -261,11 +263,17 @@
     }
 }
 
+// Function to redirect to another page with the user ID
+        function redirectToPurchaseHistory(userId) {
+            const redirectURL = `purchasehistory.html?id=${userId}`;
+            window.location.href = redirectURL;
+        }
 
+        function redirectTowalletPage(userId) {
+            const redirectURL = `wallet.html?id=${userId}`;
+            window.location.href = redirectURL;
+        }
 
-
-
-    
     </script>
 </body>
 </html>
