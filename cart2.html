@@ -40,7 +40,6 @@
             </select>
         </div>
     </div>
-    
     <div class="container">
         <table id="cart">
             <thead>
@@ -52,8 +51,7 @@
                     <th class="sixth">&nbsp;</th>
                 </tr>
             </thead>
-            <tbody id="cartDetails">
-            </tbody>
+            <tbody id="cartDetails"></tbody>
             <tr class="totalprice">
                 <td class="light">Total:</td>
                 <td colspan="2">&nbsp;</td>
@@ -72,7 +70,6 @@
             </tr>
         </table>
     </div>
-
     <script>
         const serverURL = 'http://localhost:3000';
         const userId = 5;
@@ -118,14 +115,15 @@
             }
         }
 
-       // Function to display cart details on the page
+        // Function to display cart details on the page
         async function displayCartDetails(userId) {
             try {
                 const cartDetails = await fetchCartDetails(userId);
                 const tbody = document.getElementById('cartDetails');
-                const messageRow = document.querySelector('.totalprice'); // Select the totalprice row
+                const totalRow = document.querySelector('.totalprice');
+                const walletRow = document.querySelector('.walletamount');
 
-                tbody.innerHTML = ''; // Clear the existing content before adding new items
+                tbody.innerHTML = '';
                 if (cartDetails.length > 0) {
                     let finalCartValue = 0;
                     for (const item of cartDetails) {
@@ -137,28 +135,27 @@
                             <td>${bookDetails[0].Title}</td>
                             <td><input type="number" value="${item.Quantity}" min="0" max="99" class="qtyinput" onchange="updateQuantity(this)"></td>
                             <td>${totalPrice.toFixed(2)}</td>
-                            <td><span class="remove" onclick="removeItem(this)"><img
-                                    src="https://i.imgur.com/h1ldGRr.png" alt="X"></span></td>
+                            <td><span class="remove" data-book-id="${bookDetails[0].BookID}" onclick="removeItem(this)"><img src="https://i.imgur.com/h1ldGRr.png" alt="Remove"></span></td>
                         `;
                         tbody.appendChild(tr);
                     }
+                    totalRow.classList.remove('hidden');
+                    walletRow.classList.remove('hidden');
                     document.querySelector('.totalprice td span.thick').innerText = `$${finalCartValue.toFixed(2)}`;
-                    // Fetch and update wallet amount separately
                     const walletResponse = await fetch(`${serverURL}/wallet_balance?id=${userId}`);
                     const walletData = await walletResponse.json();
                     const walletAmount = parseFloat(walletData.balance);
                     document.querySelector('.walletamount td span.thick').innerText = `$${walletAmount.toFixed(2)}`;
                 } else {
-                    // No items in the cart
-                    messageRow.classList.remove('hidden'); // Show the message when there are no items in the cart
-                    document.querySelector('.totalprice td span.thick').innerText = '$0.00';
-                    document.querySelector('.walletamount td span.thick').innerText = '$0.00';
-                    tbody.innerHTML = '<tr><td colspan="5">There are no items in the cart.</td></tr>';
+                    totalRow.classList.add('hidden');
+                    walletRow.classList.add('hidden');
                 }
             } catch (error) {
                 console.error('Error fetching cart details:', error);
             }
         }
+
+
 
         function getBookIdFromRow(row) {
             const bookId = row.querySelector('.remove').getAttribute('data-book-id');
@@ -168,12 +165,9 @@
 
         // Function to remove an item from the cart
         async function removeItem(element) {
-            console.log('removeItem function called');
             const row = element.closest('tr');
-            const userId = 3; 
-            const bookId = getBookIdFromRow(row); // Define a function to get the book ID from the row
+            const bookId = getBookIdFromRow(row);
             try {
-                // Call the backend to delete the item from the cart
                 const response = await fetch(`${serverURL}/delete_item_from_cart?userId=${userId}&bookId=${bookId}`, {
                     method: 'DELETE',
                 });
@@ -182,13 +176,12 @@
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
 
-                // If the item is successfully deleted, update the UI
                 row.parentNode.removeChild(row);
-                updateTotalPrice(userId); // Update the total price after removing the item
+                updateTotalPrice(userId);
             } catch (error) {
                 console.error('Error removing item from cart:', error);
             }
-     }
+        }
 
         async function updateTotalPrice(userId) {
         try {
@@ -207,7 +200,7 @@
     }
 
         
-        async function purchaseNow(userId) {
+    async function purchaseNow(userId) {
             try {
                 // Fetch the cart details to include in the purchase request
                 const cartDetails = await fetchCartDetails(userId);
@@ -251,6 +244,7 @@
             }
         }
 
+    
     </script>
 </body>
 
