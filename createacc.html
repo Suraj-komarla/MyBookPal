@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Your Account</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-image: url('/Users/apurv_paliwal/Desktop/software_engineering_class/project_1/book-stack-library-room-blurred-600nw-621157613.webp');
+            background-size: cover;
+            background-position: center;
+        }
+        .form-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            width: 80%;
+            max-width: 500px;
+            text-align: center;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .terms {
+            font-size: small;
+            color: rgb(0, 0, 0);
+        }
+        .checkbox-container {
+            text-align: left;
+            margin-top: 20px;
+        }
+        h2 {
+            color: rgb(0, 0, 0);
+        }
+    </style>
+
+</head>
+<body>
+    <div id="accountForm">
+        <h2>Create Your Account</h2>
+        <form id="UserDetails" class="UserForm" form action="/register" method="post">
+            <label for="firstName">First Name:</label>
+            <input type="text" id="first_name" name="firstName" required><br>
+
+            <label for="lastName">Last Name:</label>
+            <input type="text" id="first_name" name="lastName" required><br>
+
+            <label for="phone">Phone Number:</label>
+            <input type="number" id="phone" name="phone" required><br>
+
+            <label for="email">Email Address:</label>
+            <input type="email" id="emailid" name="email" required><br>
+
+            <label for="address">Address:</label>
+            <input type="text" id="address" name="address" required><br>
+
+            <label for="confirmEmail">Confirm Email Address:</label>
+            <input type="email" id="confirmEmail" name="confirmEmail" required><br>
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required><br>
+            <small>8 characters minimum, case-sensitive, no spaces (Tip: 1 Uppercase, 1 Lowercase, 1 Number, 1 Symbol)</small><br><br>
+
+            <label for="confirmPassword">Confirm Password:</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required><br>
+
+            <p class="terms">
+                By clicking "Create Account" you agree to the <a href="url-to-terms">Terms of Use</a> and <a href="url-to-privacy-policy">Privacy Policy</a>.
+            </p>
+
+            <button id="create" type="submit">Create Account</button>
+            <button type="button">Cancel</button>
+        </form>
+    </div>
+
+<script>
+    function handleRegister() {
+        // Make an API call to subscribe to the book
+        const backendURL = 'http://localhost:3000';
+        const endpoint = `/register`;
+        var first_name = document.getElementById('first_name').value;
+        var last_name = document.getElementById('last_name').value;
+        var address = document.getElementById('address').value;
+        var phone = document.getElementById('phone').value;
+        var emailid = document.getElementById('emailid').value;
+        var password = document.getElementById('password').value;
+
+
+        console.log(emailid);
+        console.log(password);
+        fetch(`${backendURL}${endpoint}`,{
+                method: 'POST',
+                body: JSON.stringify({
+                "first_name": first_name,
+                "last_name": last_name,
+                "phone": phone,
+                "email": emailid,
+                "address": address,
+                "password": password,
+                "user_type": "customer"
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Error creating a user', data.error);
+                    // Handle the error
+                } else {
+                    console.log(data.token);
+                    // Show a suitable alert message
+                    alert('User has been created, Welcome !');
+                }
+            })
+            .catch(error => {
+                console.error('Error: ', error);
+                // Handle the error
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginForm = document.getElementById('UserDetails');
+        
+        loginForm.addEventListener('create', function(event) {
+            event.preventDefault();
+            handleRegister();
+        });
+
+        // const createUserButton = document.getElementById('CreateUser');
+        
+        // createUserButton.addEventListener('click', function(event) {
+        //     event.preventDefault();
+        //     getRegister();
+        // });
+    });
+
+
+
+    // document.addEventListener('DOMContentLoaded', () => {
+    //     const loginForm = document.getElementById('loginForm');
+        
+    //     loginForm.addEventListener('submit', function(event) {
+    //         event.preventDefault();
+    //         handleLogin();
+    //     });
+    // });
+
+</script>
+</body>
+</html>
